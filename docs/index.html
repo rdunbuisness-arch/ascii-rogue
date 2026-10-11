@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>asciirogue v0.1 (web)</title>
+<style>
+body{background:#000;color:#ccc;font-family:monospace;margin:8px}
+pre{font-size:clamp(7px,1.6vw,15px);line-height:1.15;margin:0;white-space:pre}
+.y{color:#ee0}.c{color:#0dd}.w{color:#fff}.g{color:#0d0}.b{font-weight:bold}
+#btns{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+button{background:#222;color:#ddd;border:1px solid #666;font:14px monospace;padding:10px 12px;border-radius:4px}
+button:active{background:#444}
+</style></head><body>
+<pre id="scr"></pre>
+<div id="btns">
+<button data-k="w">w: train worker</button><button data-k="l">l: build Library</button>
+<button data-k="p">p: worker→Power</button><button data-k="k">k: worker→Knowledge</button>
+<button data-k=" ">space: pause</button><button data-k="q">q: quit</button><button data-k="r">r: restart</button>
+</div>
+<script id="logic">
+// ---- CONFIG: mirrors config.txt defaults; URL params override (e.g. ?worker_cost=30) ----
+var CONFIG = {tick_rate:10, map_width:60, map_height:20, start_power:50, start_knowledge:0,
+  start_workers:2, worker_cost:50, worker_train_time:8, worker_speed:4, carry_amount:5,
+  gather_time:2, library_cost:150, library_build_time:15, power_nodes:3, knowledge_nodes:2,
+  node_capacity:0, max_workers:12};
+var INT_KEYS = ["tick_rate","map_width","map_height","start_power","start_knowledge","start_workers",
+  "worker_cost","worker_train_time","worker_speed","carry_amount","gather_time","library_cost",
+  "library_build_time","power_nodes","knowledge_nodes","node_capacity","max_workers"]; // all int in Python (truncate)
+function loadConfig(overrides){
+  var c = {}; for (var k in CONFIG) c[k] = CONFIG[k];
+  for (var k2 in (overrides||{})) if (k2 in c){ var v = parseFloat(overrides[k2]); if (!isNaN(v)) c[k2] = Math.trunc(v); }
+  c.map_width = Math.max(20,c.map_width); c.map_height = Math.max(8,c.map_height); c.tick_rate = Math.max(1,c.tick_rate);
+  return c;
+}
+function pmod(a,n){ return ((a%n)+n)%n; }
+function Node(kind,x,y,cap){ this.kind=kind; this.x=x; this.y=y; this.left=cap>0?cap:null; this.library=null; this.build_left=0; }
+Node.prototype.usable=function(){ if(this.left!==null&&this.left<=0) return false; return this.kind==="P"||this.library==="done"; };
+function Worker(x,y,job){ this.x=x; this.y=y; this.job=job||"P"; this.state="idle"; this.target=null; this.timer=0; this.carry=0; this.carry_kind=null; this.trips=0; }
+function dist(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]); }
+function minBy(arr,f){ var best=arr[0],bv=f(best); for(var i=1;i<arr.length;i++){var v=f(arr[i]); if(v<bv){bv=v;best=arr[i];}} return best; }
+function Game(cfg){
+  var c=this.cfg=cfg||loadConfig(); var s=this;
+  s.W=c.map_width; s.H=c.map_height; s.dt=1/c.tick_rate; s.t=0;
+  s.power=c.start_power; s.knowledge=c.start_knowledge;
+  s.base=[3,Math.floor(s.H/2)-1]; s.dock=[s.base[0]+2,s.base[1]]; s.nodes=[];
+  [["P",c.power_nodes,0],["K",c.knowledge_nodes,1]].forEach(function(e){
+    var kind=e[0],n=e[1],y0=e[2];
+    for(var i=0;i<n;i++){
+      var x=Math.min(s.W-2,12+i*Math.max(6,Math.floor((s.W-16)/Math.max(1,n)))+y0*5);
+      var y=2+pmod(i*5+y0*9,s.H-4);
+      s.nodes.push(new Node(kind,x,y,c.node_capacity));
+    }
+  });
+  s.workers=[]; for(var i=0;i<c.start_workers;i++) s.workers.push(new Worker(s.dock[0],s.dock[1]));
+  s.train_left=0; s.msg="";
+}
+Game.prototype.train_worker=function(){ var s=this,c=s.cfg;
+  if(s.train_left>0){s.msg="Already training";return false;}
+  if(s.workers.length>=c.max_workers){s.msg="Max workers";return false;}
+  if(s.power<c.worker_cost){s.msg="Need "+c.worker_cost+" Power";return false;}
+  s.power-=c.worker_cost; s.train_left=c.worker_train_time; s.msg="Training worker"; return true; };
+Game.prototype.build_library=function(){ var s=this,c=s.cfg;
+  var cands=s.nodes.filter(function(n){return n.kind==="K"&&n.library===null;});
+  if(!cands.length){s.msg="No unbuilt deposit";return false;}
+  if(s.power<c.library_cost){s.msg="Need "+c.library_cost+" Power";return false;}
+  var n=minBy(cands,function(n){return dist(s.dock,[n.x,n.y]);});
+  s.power-=c.library_cost; n.library="building"; n.build_left=c.library_build_time; s.msg="Building Library"; return true; };
+Game.prototype.assign=function(job){ var s=this;
+  var ws=s.workers.filter(function(w){return w.state==="idle"&&w.job!==job;});
+  if(!ws.length) ws=s.workers.filter(function(w){return w.job!==job;});
+  if(!ws.length){s.msg="No worker to move";return false;}
+  var w=ws[0]; w.job=job; if(w.carry===0){w.state="idle";w.target=null;}
+  s.msg="Worker -> "+(job==="P"?"Power":"Knowledge"); return true; };
+Game.prototype._move=function(w,tx,ty){ var d=dist([w.x,w.y],[tx,ty]),step=this.cfg.worker_speed*this.dt;
+  if(d<=step){w.x=tx;w.y=ty;return true;} w.x+=(tx-w.x)/d*step; w.y+=(ty-w.y)/d*step; return false; };
+Game.prototype.tick=function(){ var s=this,c=s.cfg,dt=s.dt; s.t+=dt;
+  if(s.train_left>0){ s.train_left-=dt; if(s.train_left<=0){s.train_left=0;s.workers.push(new Worker(s.dock[0],s.dock[1]));s.msg="Worker ready";} }
+  s.nodes.forEach(function(n){ if(n.library==="building"){ n.build_left-=dt; if(n.build_left<=0){n.library="done";s.msg="Library complete";} } });
+  s.workers.forEach(function(w){
+    if(w.state==="idle"){
+      var opts=s.nodes.filter(function(n){return n.kind===w.job&&n.usable();});
+      if(opts.length){ w.target=minBy(opts,function(n){return dist([w.x,w.y],[n.x,n.y]);}); w.state="to_node"; }
+    } else if(w.state==="to_node"){
+      if(!w.target.usable()){w.state="idle";return;}
+      if(s._move(w,w.target.x,w.target.y)){w.state="gather";w.timer=c.gather_time;}
+    } else if(w.state==="gather"){
+      if(!w.target.usable()){w.state="idle";return;}
+      w.timer-=dt;
+      if(w.timer<=0){ var amt=c.carry_amount; if(w.target.left!==null){amt=Math.min(amt,w.target.left);w.target.left-=amt;}
+        w.carry=amt; w.carry_kind=w.target.kind; w.state="to_base"; }
+    } else if(w.state==="to_base"){
+      if(s._move(w,s.dock[0],s.dock[1])){ if(w.carry_kind==="P") s.power+=w.carry; else s.knowledge+=w.carry;
+        w.carry=0; w.trips++; w.state="idle"; }
+    }
+  }); };
+Game.prototype.counts=function(){ var p=0,k=0; this.workers.forEach(function(w){ if(w.job==="P")p++; else k++; }); return [p,k]; };
+var HELP="w:train worker  l:build Library  p/k:move a worker to Power/Knowledge  space:pause  q:quit";
+// Render to an HTML string (array of rows of [char, cssClass])
+function render(g,paused,quit){
+  var W=g.W,H=g.H,grid=[],y,x;
+  for(y=0;y<H;y++){grid.push([]);for(x=0;x<W;x++)grid[y].push([" ",""]);}
+  function put(x,y,ch,cl){ if(x>=0&&x<W&&y>=0&&y<H) grid[y][x]=[ch,cl]; }
+  for(var dx=0;dx<2;dx++)for(var dy=0;dy<2;dy++)put(g.base[0]+dx,g.base[1]+dy,"H","g b");
+  g.nodes.forEach(function(n){
+    if(n.left!==null&&n.left<=0){put(n.x,n.y,".","");return;}
+    if(n.kind==="P")put(n.x,n.y,"P","y b"); else if(n.library==="done")put(n.x,n.y,"L","c b");
+    else if(n.library==="building")put(n.x,n.y,"l","c"); else put(n.x,n.y,"K","c"); });
+  g.workers.forEach(function(w){ var x=Math.round(w.x),y=Math.round(w.y);
+    if(w.carry) put(x,y,w.carry_kind==="P"?"W":"M",(w.carry_kind==="P"?"y":"c")+" b"); else put(x,y,"w","w"); });
+  function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+  var out="+"+"-".repeat(W)+"+\n";
+  for(y=0;y<H;y++){ out+="|"; for(x=0;x<W;x++){var cell=grid[y][x]; out+=cell[1]?'<span class="'+cell[1]+'">'+esc(cell[0])+"</span>":esc(cell[0]);} out+="|\n"; }
+  out+="+"+"-".repeat(W)+"+\n";
+  var pk=g.counts(), tr=g.train_left>0?" training "+Math.round(g.train_left)+"s":"";
+  out+=esc("Power "+Math.trunc(g.power)+"  Knowledge "+Math.trunc(g.knowledge)+"  Workers "+g.workers.length+"/"+g.cfg.max_workers+
+    " (P:"+pk[0]+" K:"+pk[1]+")"+tr+"  t="+Math.trunc(g.t)+"s"+(quit?"  [QUIT - press r to restart]":paused?"  [PAUSED]":""))+"\n";
+  out+=esc(HELP)+"\n";
+  out+=esc("w idle  W carrying Power  M carrying Knowledge  K deposit  l/L Library   "+g.msg);
+  return out;
+}
+if (typeof module!=="undefined") module.exports={CONFIG:CONFIG,loadConfig:loadConfig,Game:Game,render:render};
+</script>
+<script>
+(function(){
+  var params={}; new URLSearchParams(location.search).forEach(function(v,k){params[k]=v;});
+  var g,paused,quit,acc,last;
+  function reset(){ g=new Game(loadConfig(params)); paused=false; quit=false; acc=0; last=performance.now(); }
+  reset();
+  var scr=document.getElementById("scr");
+  function key(k){
+    if(k==="r"){reset();return;}
+    if(quit) return;
+    if(k==="q"){quit=true;g.msg="Quit (r to restart)";return;}
+    if(k===" ")paused=!paused; else if(k==="w")g.train_worker(); else if(k==="l")g.build_library();
+    else if(k==="p")g.assign("P"); else if(k==="k")g.assign("K");
+  }
+  document.addEventListener("keydown",function(e){ var k=e.key.length===1?e.key.toLowerCase():""; if("wlpkqr ".indexOf(k)>=0&&k){e.preventDefault();key(k);} });
+  document.querySelectorAll("button").forEach(function(b){ b.addEventListener("click",function(){key(b.dataset.k);b.blur();}); });
+  function frame(now){
+    acc+=Math.min(1000,now-last); last=now; var step=1000*g.dt;
+    while(acc>=step){ if(!paused&&!quit) g.tick(); acc-=step; }
+    scr.innerHTML=render(g,paused,quit); requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body></html>

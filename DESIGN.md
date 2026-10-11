@@ -14,6 +14,7 @@
 - 2026-10-11 — HUD shows Power, Knowledge, worker count live plus controls.
 - 2026-10-11 — Keyboard-only controls; workers start auto-assigned to Power.
 - 2026-10-11 — Small fixed map (~60x20), tuning in config.txt, headless sim for build orders.
+- 2026-10-11 — A web build (docs/index.html) is published on GitHub Pages so Ryan can playtest from a link.
 
 ## Open questions
 - What is Knowledge spent on (tech, upgrades, new units)?
