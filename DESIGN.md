@@ -15,6 +15,9 @@
 - 2026-10-11 — Keyboard-only controls; workers start auto-assigned to Power.
 - 2026-10-11 — Small fixed map (~60x20), tuning in config.txt, headless sim for build orders.
 - 2026-10-11 — A web build (docs/index.html) is published on GitHub Pages so Ryan can playtest from a link.
+- 2026-10-11 — Home base art: the Keep (9x5 multi-line sprite, flag `|>` highlighted and blinking while a worker trains; workers drop off just below the doorway). Replaces the 2x2 `H`.
+- 2026-10-11 — Terminal version (rts.py/game.py/sim.py/config.txt) is retired; the web build (docs/index.html) is primary. Tuning knobs live in its CONFIG object and URL params.
+- 2026-10-11 — Web play screen scales its font to fill ~90% of the window (recomputed on resize); default map 100x35.
 
 ## Open questions
 - What is Knowledge spent on (tech, upgrades, new units)?

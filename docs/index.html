@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>asciirogue v0.1 (web)</title>
 <style>
-body{background:#000;color:#ccc;font-family:monospace;margin:8px}
-pre{font-size:clamp(7px,1.6vw,15px);line-height:1.15;margin:0;white-space:pre}
-.y{color:#ee0}.c{color:#0dd}.w{color:#fff}.g{color:#0d0}.b{font-weight:bold}
-#btns{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+body{background:#000;color:#ccc;font-family:monospace;margin:0;padding:2vh 2vw;box-sizing:border-box;display:flex;flex-direction:column;align-items:center}
+pre{font-size:12px;line-height:1.15;margin:0;white-space:pre}
+.y{color:#ee0}.c{color:#0dd}.w{color:#fff}.g{color:#0d0}.f{color:#f44}.f2{color:#fff}.b{font-weight:bold}
+#btns{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 button{background:#222;color:#ddd;border:1px solid #666;font:14px monospace;padding:10px 12px;border-radius:4px}
 button:active{background:#444}
 </style></head><body>
@@ -18,7 +18,7 @@ button:active{background:#444}
 </div>
 <script id="logic">
 // ---- CONFIG: mirrors config.txt defaults; URL params override (e.g. ?worker_cost=30) ----
-var CONFIG = {tick_rate:10, map_width:60, map_height:20, start_power:50, start_knowledge:0,
+var CONFIG = {tick_rate:10, map_width:100, map_height:35, start_power:50, start_knowledge:0,
   start_workers:2, worker_cost:50, worker_train_time:8, worker_speed:4, carry_amount:5,
   gather_time:2, library_cost:150, library_build_time:15, power_nodes:3, knowledge_nodes:2,
   node_capacity:0, max_workers:12};
@@ -37,22 +37,27 @@ Node.prototype.usable=function(){ if(this.left!==null&&this.left<=0) return fals
 function Worker(x,y,job){ this.x=x; this.y=y; this.job=job||"P"; this.state="idle"; this.target=null; this.timer=0; this.carry=0; this.carry_kind=null; this.trips=0; }
 function dist(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]); }
 function minBy(arr,f){ var best=arr[0],bv=f(best); for(var i=1;i<arr.length;i++){var v=f(arr[i]); if(v<bv){bv=v;best=arr[i];}} return best; }
+// The Keep (home base sprite, chosen 2026-10-11). Footprint = bounding box (9x5); workers drop off below the doorway.
+var BASE_ART=["    |>   ","   /^\\   "," [=====] "," | [#] | "," |_|_|_| "];
+var BASE_W=Math.max.apply(null,BASE_ART.map(function(r){return r.length;})), BASE_H=BASE_ART.length;
 function Game(cfg){
   var c=this.cfg=cfg||loadConfig(); var s=this;
   s.W=c.map_width; s.H=c.map_height; s.dt=1/c.tick_rate; s.t=0;
   s.power=c.start_power; s.knowledge=c.start_knowledge;
-  s.base=[3,Math.floor(s.H/2)-1]; s.dock=[s.base[0]+2,s.base[1]]; s.nodes=[];
+  s.base=[1,Math.max(0,Math.floor(s.H/2)-3)]; s.dock=[s.base[0]+4,s.base[1]+BASE_H]; s.nodes=[];
   [["P",c.power_nodes,0],["K",c.knowledge_nodes,1]].forEach(function(e){
     var kind=e[0],n=e[1],y0=e[2];
     for(var i=0;i<n;i++){
       var x=Math.min(s.W-2,12+i*Math.max(6,Math.floor((s.W-16)/Math.max(1,n)))+y0*5);
       var y=2+pmod(i*5+y0*9,s.H-4);
+      if(s.in_base(x,y)) x=s.base[0]+BASE_W+1;
       s.nodes.push(new Node(kind,x,y,c.node_capacity));
     }
   });
   s.workers=[]; for(var i=0;i<c.start_workers;i++) s.workers.push(new Worker(s.dock[0],s.dock[1]));
   s.train_left=0; s.msg="";
 }
+Game.prototype.in_base=function(x,y){ var b=this.base; return x>=b[0]&&x<b[0]+BASE_W&&y>=b[1]&&y<b[1]+BASE_H; };
 Game.prototype.train_worker=function(){ var s=this,c=s.cfg;
   if(s.train_left>0){s.msg="Already training";return false;}
   if(s.workers.length>=c.max_workers){s.msg="Max workers";return false;}
@@ -99,7 +104,8 @@ function render(g,paused,quit){
   var W=g.W,H=g.H,grid=[],y,x;
   for(y=0;y<H;y++){grid.push([]);for(x=0;x<W;x++)grid[y].push([" ",""]);}
   function put(x,y,ch,cl){ if(x>=0&&x<W&&y>=0&&y<H) grid[y][x]=[ch,cl]; }
-  for(var dx=0;dx<2;dx++)for(var dy=0;dy<2;dy++)put(g.base[0]+dx,g.base[1]+dy,"H","g b");
+  var fl=g.train_left>0&&Math.floor(g.t*2)%2?"f2 b":"f b";
+  BASE_ART.forEach(function(row,dy){ for(var dx=0;dx<row.length;dx++) if(row[dx]!==" ") put(g.base[0]+dx,g.base[1]+dy,row[dx],dy===0?fl:"g b"); });
   g.nodes.forEach(function(n){
     if(n.left!==null&&n.left<=0){put(n.x,n.y,".","");return;}
     if(n.kind==="P")put(n.x,n.y,"P","y b"); else if(n.library==="done")put(n.x,n.y,"L","c b");
@@ -124,8 +130,16 @@ if (typeof module!=="undefined") module.exports={CONFIG:CONFIG,loadConfig:loadCo
   var params={}; new URLSearchParams(location.search).forEach(function(v,k){params[k]=v;});
   var g,paused,quit,acc,last;
   function reset(){ g=new Game(loadConfig(params)); paused=false; quit=false; acc=0; last=performance.now(); }
-  reset();
-  var scr=document.getElementById("scr");
+  reset(); var fitted=false;
+  var scr=document.getElementById("scr"), btns=document.getElementById("btns");
+  // Scale font so map+HUD use ~90% of the window (recomputed on resize).
+  function fit(){ var cols=0; (scr.textContent||"").split("\n").forEach(function(l){cols=Math.max(cols,l.length);});
+    var rows=g.H+5; cols=Math.max(cols,g.W+2);
+    var pr=document.createElement("span"); pr.textContent="M".repeat(100); pr.style.cssText="font-size:100px;visibility:hidden;position:absolute";
+    scr.appendChild(pr); var cw=pr.getBoundingClientRect().width/100/100; scr.removeChild(pr);
+    var avH=0.9*innerHeight-btns.offsetHeight-8;
+    scr.style.fontSize=Math.max(6,Math.min(0.9*innerWidth/(cols*cw),avH/(rows*1.15)))+"px"; }
+  addEventListener("resize",fit);
   function key(k){
     if(k==="r"){reset();return;}
     if(quit) return;
@@ -138,7 +152,7 @@ if (typeof module!=="undefined") module.exports={CONFIG:CONFIG,loadConfig:loadCo
   function frame(now){
     acc+=Math.min(1000,now-last); last=now; var step=1000*g.dt;
     while(acc>=step){ if(!paused&&!quit) g.tick(); acc-=step; }
-    scr.innerHTML=render(g,paused,quit); requestAnimationFrame(frame);
+    scr.innerHTML=render(g,paused,quit); if(!fitted){fitted=true;fit();} requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 })();

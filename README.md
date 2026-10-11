@@ -3,9 +3,9 @@
 An ASCII real-time strategy game.
 
 **Play in your browser:** https://rdunbuisness-arch.github.io/ascii-rogue/
-(override tuning via URL params, e.g. `?worker_cost=30&tick_rate=20`)
+The web build (`docs/index.html`) is the only maintained version. Tuning knobs live in its `CONFIG` object; override any of them via URL params, e.g. `?worker_cost=30&map_width=60&map_height=20`.
 
-**Terminal:** `python3 rts.py` (tuning in `config.txt`; headless build-order sim: `python3 sim.py`)
+The old terminal version (`rts.py`, `game.py`, `sim.py`, `config.txt`) is retired and no longer updated.
 
 ## Controls
 - `w` train worker (costs Power)
@@ -14,4 +14,4 @@ An ASCII real-time strategy game.
 - `space` pause
 - `q` quit (web: stops the game; `r` restarts)
 
-Glyphs: `H` base, `P` Power node, `K` Knowledge deposit, `l`/`L` Library building/done, `w` idle worker, `W` carrying Power (yellow), `M` carrying Knowledge (cyan).
+Glyphs: the Keep (home base; its `|>` flag blinks while a worker trains), `P` Power node, `K` Knowledge deposit, `l`/`L` Library building/done, `w` idle worker, `W` carrying Power (yellow), `M` carrying Knowledge (cyan).
