@@ -1,0 +1,18 @@
+# asciirogue tuning knobs: key=value, '#' starts a comment
+tick_rate=10            # simulation ticks per second
+map_width=60
+map_height=20
+start_power=50
+start_knowledge=0
+start_workers=2
+worker_cost=50          # Power
+worker_train_time=8     # seconds
+worker_speed=4          # cells per second
+carry_amount=5          # resource per trip
+gather_time=2           # seconds at node per trip
+library_cost=150        # Power
+library_build_time=15   # seconds
+power_nodes=3
+knowledge_nodes=2
+node_capacity=0         # 0 = infinite
+max_workers=12
