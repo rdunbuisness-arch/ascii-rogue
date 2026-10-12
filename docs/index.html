@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>ASCII Rogue v0.3</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>html,body{margin:0;height:100%;background:#0b0b0e;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:crosshair}</style>
+<style>html,body{margin:0;height:100%;background:#120e24;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:crosshair}</style>
 </head><body><canvas id="c"></canvas>
 <script>
 "use strict";
@@ -16,8 +16,8 @@ const CFG={start_power:100,start_knowledge:0,start_workers:3,
  spears_k:40,spears_p:50,swift_k:30,swift_p:30,walls_k:50,walls_p:80,walls_hp:50,swift_mult:1.25,wave_interval:45,wave_base:3,wave_growth:2,
  power_nodes:3,knowledge_nodes:2,rate_window:30};
 new URLSearchParams(location.search).forEach((v,k)=>{if(k in CFG&&!isNaN(+v))CFG[k]=+v;});
-const PAL={'.':null,K:'#0b0b0e',Y:'#ffd84a',y:'#b8921e',C:'#4ad8ff',c:'#1f86a8',R:'#ff4a4a',r:'#a82424',G:'#7fd17f',g:'#3f8a3f',
- B:'#d8b47a',b:'#8a6a3a',M:'#8a8a8a',m:'#5a5a5a',W:'#e8e8e8',F:'#3fae4a',f:'#22702a',A:'#3a7bd5',a:'#2a5aa0',S:'#d0d0ff',s:'#8080b0',O:'#e0c8a8',D:'#4a3a2a'};
+const PAL={'.':null,K:'#0b0b0e',Y:'#ffe01a',y:'#e09a00',C:'#2ee6ff',c:'#0a8fd0',R:'#ff2e4a',r:'#c0102a',G:'#5cff5c',g:'#1fb83a',
+ B:'#ffb84a',b:'#b8641e',M:'#8a8a8a',m:'#5a5a5a',W:'#e8e8e8',F:'#2eea4a',f:'#109a2a',A:'#2a8aff',a:'#1458e0',S:'#c8d0ff',s:'#6a78ff',O:'#ffd0a0',D:'#8a4a1e'};
 const SPR={
 worker:["...OO...","...OO...","..WWWW..","..WWWW..","...WW...","..W..W..","..W..W..","........"],
 power:["......Y.",".....YYY","...OO.Y.","...OO...","..WWWW..","...WW...","..W..W..","........"],
@@ -54,7 +54,7 @@ function newGame(){
  setupSize();
  G={t:0,power:CFG.start_power,know:CFG.start_knowledge,workers:[],soldiers:[],enemies:[],blds:[],nodes:[],deco:[],
   income:[],peak:{P:60,K:60},wq:[],sq:[],place:null,mouse:{x:0,y:0},msg:'Welcome! Train workers [W], build a Library on a blue deposit [L].',msgT:6,
-  wave:0,nextWave:CFG.wave_first,parts:[],shake:0,over:false,won:false,paused:false,kills:0,up:{},peakPop:0,totP:0,totK:0};
+  wave:0,nextWave:CFG.wave_first,started:false,parts:[],shake:0,over:false,won:false,paused:false,kills:0,up:{},peakPop:0,totP:0,totK:0};
  const keep={type:'keep',x:24,y:Math.floor(MH/2-16),w:32,h:32,done:true,hp:CFG.keep_hp,max:CFG.keep_hp};G.keep=keep;G.blds.push(keep);
  G.lair={x:W-44,y:Math.floor(MH/2-8),w:32,h:16};
  const free=(r)=>r.x>4&&r.y>4&&r.x+r.w<W-4&&r.y+r.h<MH-4&&!G.nodes.some(n=>overlap(n,r,10))&&!overlap(r,keep,24)&&!overlap(r,G.lair,30);
@@ -172,8 +172,8 @@ function button(a,x,y,w,h,big){const en=enabled(a),hov=G.mouse.x>=x&&G.mouse.x<x
  btns.push({x,y,w,h,a});}
 function draw(){
  btns=[];const sh=G.shake>0?G.shake*8:0;ctx.setTransform(S,0,0,S,rnd(-sh,sh)*S,rnd(-sh,sh)*S);ctx.imageSmoothingEnabled=false;
- ctx.fillStyle='#16161b';ctx.fillRect(0,0,W,MH);
- for(let y=0;y<MH;y+=8)for(let x=0;x<W;x+=16){ctx.fillStyle=((y/8+x/16)%3?'#1d1d23':'#222229');ctx.fillRect(x+3,y+3,2,2);}
+ ctx.fillStyle='#1a1430';ctx.fillRect(0,0,W,MH);
+ for(let y=0;y<MH;y+=8)for(let x=0;x<W;x+=16){ctx.fillStyle=((y/8+x/16)%3?'#241c44':'#2c2252');ctx.fillRect(x+3,y+3,2,2);}
  G.deco.forEach(d=>spr(d.t,d.x,d.y));
  spr('lair',G.lair.x,G.lair.y,2);
  G.nodes.forEach(n=>{if(!n.lib)spr(n.kind==='P'?'crystal':'lore',n.x,n.y);});
@@ -196,7 +196,7 @@ function draw(){
  if(G.msgT>0)txt(G.msg,W/2,MH-6,'#ffd84a',6,'center');
  // bottom panel
  ctx.setTransform(S,0,0,S,0,0);
- const py=MH;ctx.fillStyle='#0f0f13';ctx.fillRect(0,py,W,UI);ctx.fillStyle='#44444f';ctx.fillRect(0,py,W,1);
+ const py=MH;ctx.fillStyle='#120e24';ctx.fillRect(0,py,W,UI);ctx.fillStyle='#ff2ea8';ctx.fillRect(0,py,W,1);
  const bw=Math.min(130,Math.floor((W-210)/1.2));
  bar(6,py+14,bw,'POWER','#ffd84a','#b8921e',G.power,rate('P'),'P');
  bar(6,py+38,bw,'KNOWLEDGE','#4ad8ff','#1f86a8',G.know,rate('K'),'K');
@@ -206,6 +206,13 @@ function draw(){
  for(let i=0;i<9;i++){const a=ACTIONS[i],x=cx+(i%3)*cs,y=cy+Math.floor(i/3)*cs;if(a)button(a,x,y,cs-1,cs-1);else{ctx.fillStyle='#141418';ctx.fillRect(x,y,cs-1,cs-1);}}
  txt('BUILD',cx-4,cy+4,'#77778a',5,'right');
  txt('Space pause  Esc cancel  Shift+R restart',cx-4,py+UI-6,'#55556a',5,'right');
+ txt('v0.3',W-3,H-3,'#8a7ab8',5,'right');
+ if(!G.started){ctx.fillStyle='rgba(18,14,36,.88)';ctx.fillRect(0,0,W,H);const cy=H/2-40;
+  txt('ASCII ROGUE',W/2,cy,'#ffe01a',22,'center');txt('ASCII ROGUE',W/2-1,cy-1,'#ff2ea8',22,'center');txt('ASCII ROGUE',W/2-2,cy-2,'#ffe01a',22,'center');
+  txt('Defend the Keep: survive '+CFG.win_waves+' enemy waves.',W/2,cy+22,'#2ee6ff',8,'center');
+  ['W train worker   S train soldier (needs Barracks)','B Barracks   L Library (on blue deposit)   1/2/3 upgrades (cost Knowledge)','P / K move a worker to Power / Knowledge   Space pause   Esc cancel   R restart']
+   .forEach((l,i)=>txt(l,W/2,cy+40+i*11,'#e8e8ff',6,'center'));
+  if(Math.floor(performance.now()/500)%2)txt('click or press any key to start',W/2,cy+82,'#5cff5c',8,'center');}
  if(G.paused&&!G.over){ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,MH);txt('PAUSED',W/2,MH/2,'#e8e8e8',12,'center');}
  if(G.over){ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,0,W,H);txt(G.won?'VICTORY! THE KEEP STANDS':'THE KEEP HAS FALLEN',W/2,H/2-24,G.won?'#7fff6a':'#ff4a4a',14,'center');
   txt('Time '+fmtT(G.t)+'   Waves '+G.wave+'/'+CFG.win_waves+'   Attackers stopped '+G.kills,W/2,H/2-6,'#e8e8e8',7,'center');
@@ -217,11 +224,11 @@ function resize(){const d=devicePixelRatio||1;cv.width=Math.round(innerWidth*d);
 function toWorld(e){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;return{x:(e.clientX-r.left)*d/S,y:(e.clientY-r.top)*d/S};}
 cv.addEventListener('mousemove',e=>{G.mouse=toWorld(e);});
 cv.addEventListener('contextmenu',e=>{e.preventDefault();G.place=null;});
-cv.addEventListener('mousedown',e=>{if(e.button!==0)return;G.mouse=toWorld(e);const m=G.mouse;
+cv.addEventListener('mousedown',e=>{if(!G.started){G.started=true;return;}if(e.button!==0)return;G.mouse=toWorld(e);const m=G.mouse;
  const b=btns.find(b=>m.x>=b.x&&m.x<b.x+b.w&&m.y>=b.y&&m.y<b.y+b.h);if(b){doAction(b.a);return;}
  if(G.place&&m.y<MH&&!G.over)placeAt();});
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();
- if(k==='r'&&(G.over||e.shiftKey)){newGame();resize();return;}
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!G.started){G.started=true;e.preventDefault();return;}
+ if(k==='r'&&(G.over||e.shiftKey)){newGame();resize();G.started=true;return;}
  if(G.over)return;
  if(k===' '){G.paused=!G.paused;e.preventDefault();return;}
  if(k==='escape'){G.place=null;return;}
@@ -229,7 +236,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
  const a=[...TRAIN,...ACTIONS].find(a=>a.key===k);if(a)doAction(a);});
 addEventListener('resize',resize);
 let last=performance.now();
-function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;if(!G.over&&!G.paused)step(dt);draw();requestAnimationFrame(loop);}
+function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;if(G.started&&!G.over&&!G.paused)step(dt);draw();requestAnimationFrame(loop);}
 newGame();resize();requestAnimationFrame(loop);
 window.__G=()=>G;window.__S=()=>S;window.__ghost=ghostRect;window.__step=step;window.__CFG=CFG;
 </script></body></html>
