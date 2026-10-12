@@ -3,7 +3,10 @@ const {chromium}=require('playwright'),assert=require('assert'),path=require('pa
 const URL='file://'+path.join(__dirname,'../docs/index.html');
 (async()=>{const b=await chromium.launch(process.env.CHROME?{executablePath:process.env.CHROME}:{});
  const p=await b.newPage({viewport:{width:1280,height:720}});const errs=[];p.on('pageerror',e=>errs.push(e.message));
- await p.goto(URL+'?wave_first=3&win_waves=2');await p.waitForTimeout(300);
+ // auto_waves on: timer launches waves
+ await p.goto(URL+'?auto_waves=1&wave_first=2');await p.keyboard.press('Enter');
+ const auto=await p.evaluate(()=>{for(let i=0;i<30;i++)__step(0.1);return __G().wave;});assert.strictEqual(auto,1,'auto wave fired');
+ await p.goto(URL+'?win_waves=2');await p.waitForTimeout(300);
  assert.strictEqual(await p.evaluate(()=>__G().started),false);await p.keyboard.press('Enter');
  assert.strictEqual(await p.evaluate(()=>__G().started),true);
  const r=await p.evaluate(()=>{const G=__G(),{C,R}=__dims(),CORE=__CORE;G.power=1e5;G.know=1e3;const out={};
@@ -19,8 +22,14 @@ const URL='file://'+path.join(__dirname,'../docs/index.html');
   // cannons along the robot path
   G.place=null;let cannons=0;for(let k=0;k<G.path.length&&cannons<6;k+=4){const i=G.path[k];for(const j of CORE.nbrs(i,C,R)){if(G.g[j]===CORE.FREE&&__place('cannon',j%C,Math.floor(j/C))){cannons++;break;}}}
   G.place=null;out.cannons=cannons;
-  for(let i=0;i<120;i++)__step(0.1);out.midEnemies=G.enemies.length;
+  for(let i=0;i<300;i++)__step(0.1);out.waveBeforeSend=G.wave;
   return out;});
+ assert.strictEqual(r.waveBeforeSend,0,'no timer waves by default');
+ await p.keyboard.press('n');
+ r.afterN=await p.evaluate(()=>{for(let i=0;i<60;i++)__step(0.1);return {wave:__G().wave,enemies:__G().enemies.length};});
+ assert.strictEqual(r.afterN.wave,1,'N sends a wave');
+ await p.evaluate(()=>{for(let i=0;i<400;i++)__step(0.1);});await p.keyboard.press('n');
+ await p.evaluate(()=>{for(let i=0;i<40;i++)__step(0.1);});
  await p.waitForTimeout(150);await p.screenshot({path:process.argv[2]||'/tmp/sh.png'});
  const r2=await p.evaluate(()=>{const G=__G();for(let i=0;i<3000&&!G.over;i++)__step(0.1);return{kills:G.kills,soldiers:G.soldiers.length,hp:G.keep.hp,won:G.won,over:G.over};});
  await p.keyboard.press('r');const r3=await p.evaluate(()=>[__G().over,__G().t]);

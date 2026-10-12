@@ -13,6 +13,12 @@
 - Faster pacing: first wave at 20s, waves every 25s, quicker gathering/training, faster robots.
 - Chiptune SFX (M mutes). New start screen title. Top bar keeps Power, Knowledge, workers, soldiers, next wave + size.
 - All labels in a NAMES table and pixel art in a SPRITES table (placeholders for final names/art).
+- Waves are player-launched by default: big SEND WAVE tile / N hotkey; top bar shows "Next: wave N/10 (~size)".
+  The timer is a knob (`?auto_waves=1`, then `wave_first`/`wave_interval` apply).
+- Visual spec docs/mockup-superhumanity: its palette and sprites (Intern, Luddite, The Last Office, Union Hall,
+  Server Farm, Compute/Data deposits, Paywall posts, Disruptor, Alignment Spawn, Chatbot/Scraper/Unicorn robots).
+- Starred NAMES.md labels: Compute, Data, Intern, Luddite, The Last Office, Union Hall, Server Farm, Paywall,
+  Disruptor, The Alignment (led by SAM-1). Robot mix: Chatbots, Scrapers from wave 3 (fast), Unicorns from wave 5 (tank).
 - Tests: `node tests/path.test.js` (pathfinding/anti-seal) and `tests/play.test.js` (Playwright: placement, maze, cannons kill robots, win, restart).
 
 ## v0.3.1 — bold bottom panel (2026-10-11)
