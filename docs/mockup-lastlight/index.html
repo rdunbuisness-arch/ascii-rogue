@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Last Light - Style Guide</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#1a2a1e;overflow:hidden}canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}</style>
+</head><body><canvas id="c"></canvas>
+<script>
+"use strict";
+// ---- Names (Last Light theme: edit here) ----
+const NAMES={game:'LAST LIGHT',power:'Spark',knowledge:'Lore',worker:'Scavenger',soldier:'Ranger',base:'Haven',barracks:'Muster Hall',
+ library:'Archive',forcefield:'Aegis',cannon:'Sunlance',humans:'Resistance',faction:'the Concord',leader:'OVERSEER',grunt:'Sentinel',fast:'Harvester',
+ tank:'Titan',drone:'Drone',spawn:'Foundry'};
+const PAL={K:'#20140c',H:'#ff7a1a',h:'#b04a10',O:'#ffc890',W:'#fff4d8',n:'#ffd84a',Y:'#ffe000',y:'#c09000',C:'#00e5ff',c:'#0090c0',
+ R:'#ff2030',r:'#a8102a',d:'#30343e',G:'#d8dee8',g:'#7a8494',P:'#ff9a3a',L:'#5ad84a',l:'#2a8a2a',S:'#4a505c',N:'#e85a2a',u:'#8a3a1a',X:'#f0f6ff'};
+const SPR={
+intern:["..KKKK..",".KOOOOK.",".LLLLLLn","KHhHHHKn","KHHHhHH.","KHhHHHH.",".KlllKK.",".KK..KK."],
+internP:["..KKKK.Y",".KOOOOYY",".LLLLLLY","KHhHHHK.","KHHHhHH.","KHhHHHH.",".KlllKK.",".KK..KK."],
+internD:["..KKKK.C",".KOOOOCC",".LLLLLLC","KHhHHHK.","KHHHhHH.","KHhHHHH.",".KlllKK.",".KK..KK."],
+luddite:["..KKK..Y",".KOOOK.n","..HHH..n",".LLLLLLn","LlLLLL.n",".LLlL...",".u..u...",".K..K..."],
+chatbot1:["..GXXG..",".GXGGXG.",".GRRRRG.","..GGGG..",".gGXXGg.","g.GXXG.g","..G..G..",".gg..gg."],
+chatbot2:["..GXXG..",".GXGGXG.",".GrRRrG.","..GGGG..",".gGXXGg.","g.GXXG.g","..G..G..",".gg..gg."],
+sam1:["...XX...","..GXXG..",".GRRRRG.","GXGGGGXG","gGXRRXGg",".gGXXGg.","..gGGg..","...gg..."],
+sam2:["...XX...","..GXXG..",".GRrrRG.","GXGGGGXG","gGXrrXGg",".gGXXGg.","..gGGg..","...gg..."],
+scraper1:["........","...GXXG.","..GXGRRG","gGGGGGGg","GXXXXXXG",".g.g.g.g","g.g.g.g.","........"],
+scraper2:["........","...GXXG.","..GXGRRG","gGGGGGGg","GXXXXXXG","g.g.g.g.",".g.g.g.g","........"],
+drone1:["g......g",".gG..Gg.","..GXXG..",".GXRRXG.",".GXRRXG.","..GXXG..",".g....g.","........"],
+drone2:["........","g.gG.Gg.","..GXXG.g",".GXRrXG.",".GXrRXG.","..GXXG..","g......g","........"],
+unicorn1:[".GGGGGG.","GXRRRRXG","GGGGGGGG","XGgXXgGX","GGGGGGGG","GgGGGGgG","GG.gg.GG","gg....gg"],
+unicorn2:[".GGGGGG.","GXrRRrXG","GGGGGGGG","XGgXXgGX","GGGGGGGG","GgGGGGgG","GG.gg.GG",".gg..gg."],
+compute:["Y.Y.Y.Y.","KKKKKKKK","KYYYYYYK","KYyKKyYK","KYyKKyYK","KYYYYYYK","KKKKKKKK","Y.Y.Y.Y."],
+deposit:["..cCCc..",".cCWCCc.","cCCCCCCc","CCcCCcCC",".cCCCCc.","cCCcCCCc","..cCCc..","cccccccc"],
+paywall:["..CCCC..",".CWWWWC.","..CCCC..","...uu...","..NuuN..","..NNNN..",".NuuuuN.","KKKKKKKK"],
+cannon:["......Y.","..NNNYY.",".NPPPNNN",".NPYPNNN",".NPPPN..","..NNN...",".uNNNuu.","KKKKKKKK"],
+office:[".......nn.......","......nYYn......",".......nn.......",".......uu.......","..N....uu....N..",".NNN...uu...NNN.","NuuNNNNNNNNNNuuN","NuuNHHHHHHHHNuuN","NuuNHYHHHHYHNuuN","NuuNHHHHHHHHNuuN","NuuNHHHKKHHHNuuN","NuuNHLHKKHLHNuuN","NuuNHHHKKHHHNuuN","NNNNNNNKKNNNNNNN","llllllllllllllll","LLLLLLLLLLLLLLLL"],
+union:["....LLLLLLLL....","..LLLLLLLLLLLL..",".LLLLLLLLLLLLLL.","KKKKKKKKKKKKKKKK","KuuuuuuuuuuuuuuK","KuNNNNYYNNNNNNuK","KuuuuuuuuuuuuuuK","KuYYuuuKKuuuYYuK","KuuuuuuKKuuuuuuK","KuuuuuuKKuuuuuuK","KKKKKKKKKKKKKKKK","llllllllllllllll"],
+server:["....NNNNNNNN....","..NNNNNNNNNNNN..","KKKKKKKKKKKKKKKK","KuCuuCuuCuuCuuuK","KuCuuCuuCuuCuuuK","KuuuuuuuuuuuuuuK","KuCuuuuKKuuuuCuK","KuCuuuuKKuuuuCuK","KKKKKKKKKKKKKKKK","..cCCcCCCCcCCc..",".cCCCCcCCCCCCCc.","cccccccccccccccc"],
+spawn:["gggggggggggggggg","gGGGGGGGGGGGGGGg","gGddddddddddddGg","gGdRddddddddRdGg","gGddddddddddddGg","gGddddRRRRddddGg","gGdddRRRRRRdddGg","gGdddRRXXRRdddGg","gGdddRRXXRRdddGg","gGdddRRRRRRdddGg","gGddddRRRRddddGg","gGddddddddddddGg","gGdRddddddddRdGg","gGGGGGGGGGGGGGGg","gggggggggggggggg","SSSSSSSSSSSSSSSS"],
+};
+const EXPECT={};for(const k in SPR)EXPECT[k]=k in {office:1,spawn:1}?[16,16]:k in {union:1,server:1}?[16,12]:[8,8];
+const W=320,H=228,cv=document.getElementById('c'),ctx=cv.getContext('2d');let S=1,t=0;
+function spr(n,x,y,s,flip){const g=SPR[n];for(let j=0;j<g.length;j++)for(let i=0;i<g[j].length;i++){const p=PAL[g[j][i]];if(p){ctx.fillStyle=p;
+ ctx.fillRect((x+(flip?g[j].length-1-i:i)*s)*S,(y+j*s)*S,s*S,s*S);}}}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x*S,y*S,w*S,h*S);}
+function txt(s,x,y,px,c,al){ctx.font='bold '+Math.round(px*S)+'px monospace';ctx.textAlign=al||'center';ctx.textBaseline='middle';
+ ctx.fillStyle='#1a1030';ctx.fillText(s,(x+.6)*S,(y+.6)*S);ctx.fillStyle=c;ctx.fillText(s,x*S,y*S);}
+const f2=(n,k)=>n+((Math.floor(t/2)+(k||0))%2+1);
+function label(n,s,x,y,name,c){spr(n,x,y,s);const w=SPR[n][0].length*s;txt(name,x+w/2,y+SPR[n].length*s+5,4.5,c||'#ffffff');}
+function head(s,y,c){txt(s,6,y,6,c,'left');rect(6,y+4,308,1,c);}
+function draw(){
+ rect(0,0,W,H,'#1a2a1e');
+ // (1) banner
+ rect(0,0,W,30,'#3a1e10');for(let i=0;i<W;i+=8)rect(i,28,4,2,i%16?'#ffe000':'#ff7a1a');for(let i=0;i<9;i++)rect(160+(i-4)*22,0,2,28,'rgba(255,220,120,0.12)');
+ const col=['#ffe000','#ffb040','#ff7a1a','#ffd84a'];[...NAMES.game].forEach((ch,i)=>txt(ch,160-NAMES.game.length*8+8+i*16,13+(Math.floor(t+i)%4===0?-1:0),18,col[i%4]));
+ txt('the '+NAMES.humans+' holds the line against '+NAMES.faction+' and '+NAMES.leader,160,25,5,'#fff4d8');
+ // (2) humans
+ head('THE '+NAMES.humans.toUpperCase(),38,'#ffb040');let b=Math.floor(t)%2;
+ label('intern',2,10,46-b,NAMES.worker,'#ffb040');label('internP',2,40,46-(1-b),NAMES.worker+' +'+NAMES.power,'#ffe000');label('internD',2,78,46-b,NAMES.worker+' +'+NAMES.knowledge,'#00e5ff');
+ label('luddite',2,116,46-(1-b),NAMES.soldier,'#5ad84a');label('office',2,146,46,NAMES.base,'#ffb040');label('union',2,190,52,NAMES.barracks,'#5ad84a');
+ label('server',2,234,52,NAMES.library,'#00e5ff');label('compute',2,282,54,NAMES.power,'#ffe000');
+ // (3) robots
+ head(NAMES.faction.toUpperCase(),90,'#d8dee8');const gl=Math.floor(t*3)%7===0?2:0;
+ label(f2('chatbot'),2,12+gl,100,NAMES.grunt,'#d8dee8');label(f2('sam'),2,52,100-b,NAMES.leader,'#d8dee8');label(f2('scraper',1),2,92,100,NAMES.fast,'#d8dee8');
+ label(f2('drone'),2,132,98+(Math.floor(t*2)%2),NAMES.drone,'#d8dee8');label(f2('unicorn'),2,172,100,NAMES.tank,'#d8dee8');
+ label('spawn',2,236,94,NAMES.spawn,'#d8dee8');
+ // (4) defenses
+ head('DEFENSES',138,'#ffe000');spr('paywall',2,10,146);spr('paywall',2,70,146);
+ for(let x=26;x<70;x++){const yy=150+Math.round(Math.sin(x*.6+t*3)*1.5);rect(x,yy,1,2,(x+Math.floor(t*4))%3?'#00e5ff':'#ffffff');}
+ txt(NAMES.forcefield,48,166,4.5,'#00e5ff');
+ spr('cannon',2,100,146);const bx=118+((t*30)%60);rect(bx,151,6,3,'#ffe000');rect(bx+2,152,4,1,'#ffffff');rect(bx-4,152,4,1,'#ff9a3a');txt(NAMES.cannon,110,166,4.5,'#ffe000');
+ // (5) palette
+ const sw=[['K','ink'],['H','jacket'],['O','skin'],['L','scarf'],['N','haven'],['Y',NAMES.power],['C',NAMES.knowledge],['R','enemy'],['d','gunmetal'],['X','chrome'],['G','steel']];
+ sw.forEach(([k,n],i)=>{rect(186+i*12,145,10,10,PAL[k]);txt(n,191+i*12,160,3,'#c0c0d8');});
+ // (6) battle strip with HUD
+ rect(0,172,W,56,'#24382a');rect(0,172,W,9,'#3a1e10');
+ txt(NAMES.power.toUpperCase()+' 340',8,177,5,'#ffe000','left');txt(NAMES.knowledge.toUpperCase()+' 85',60,177,5,'#00e5ff','left');
+ txt(NAMES.worker.toUpperCase()+'S 7',104,177,5,'#ffffff','left');txt(NAMES.soldier.toUpperCase()+'S 3',150,177,5,'#5ad84a','left');txt('WAVE 4 in 0:42 (~12)',202,177,5,'#ff2a4a','left');
+ rect(0,220,W,8,'#4a3a22');for(let x=0;x<W;x+=16)rect(x,220,8,1,'#6a5a32');
+ spr('office',1,4,204);spr('internP',1,24+((t*12)%30),212);spr('internD',1,50-((t*10)%24),212);spr('luddite',1,96+Math.floor(t*2)%2,212);
+ spr('paywall',1,118,198);spr('paywall',1,118,212);for(let y=206;y<212;y++)rect(121+Math.round(Math.sin(y+t*5)),y,2,1,'#00e5ff');
+ spr('cannon',1,80,212);const bb=88+((t*60)%110);rect(bb,215,4,2,'#ffe000');rect(bb+1,215,2,1,'#ffffff');
+ const rx=t*14;[[200,0],[222,1],[246,0],[268,1]].forEach(([x,k],i)=>{const xx=126+((x-126-rx)%170+170)%170;spr(f2(['chatbot','scraper','drone','unicorn'][i],k),1,xx,212-(i===2?6:0),true);});
+ if(Math.floor(t*4)%4===0){const ex=134;rect(ex,210,3,3,'#ffe000');rect(ex-1,214,2,2,'#ff7a1a');}
+ spr('spawn',1,300,204);
+ txt('[t] '+NAMES.worker+'  [b] '+NAMES.barracks+'  [f] '+NAMES.forcefield+'  [c] '+NAMES.cannon+'  space Pause',160,225,4,'#c0c0e0');
+}
+function resize(){const d=window.devicePixelRatio||1,vw=innerWidth*d,vh=innerHeight*d;let s=Math.min(vw/W,vh/H);S=s>=1?Math.floor(s):s;
+ cv.width=Math.round(W*S);cv.height=Math.round(H*S);cv.style.width=cv.width/d+'px';cv.style.height=cv.height/d+'px';
+ cv.style.margin=((innerHeight-cv.height/d)/2)+'px auto 0';ctx.imageSmoothingEnabled=false;draw();}
+addEventListener('resize',resize);resize();setInterval(()=>{t+=.1;draw();},100);
+</script></body></html>
