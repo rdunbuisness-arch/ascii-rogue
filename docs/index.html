@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>ASCII Rogue v0.3</title>
+<html lang="en"><head><meta charset="utf-8"><title>ASCII Rogue v0.3.1</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>html,body{margin:0;height:100%;background:#0b0b0e;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:crosshair}</style>
 </head><body><canvas id="c"></canvas>
@@ -39,7 +39,7 @@ lair:["...rrrrrrrrrr...","..rRRRRRRRRRRr..",".rRRKKKKKKKKRRr.","rRRKKKKKKKKKKRRr
 water:["AAAAAAAA","AAaAAAAA","AAAAAaAA","AAAAAAAA","aAAAAAAA","AAAAAaAA","AAaAAAAA","AAAAAAAA"]
 };
 SPR.lore=SPR.crystal.map(r=>r.replace(/Y/g,'C').replace(/y/g,'c'));
-const T=8,UI=60;
+const T=8,UI=106;
 let S=0,W=0,H=0,MH=0; // scale, world size, map height
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 function spr(n,x,y,s,a){s=s||1;const g=SPR[n];if(a!=null)ctx.globalAlpha=a;for(let j=0;j<g.length;j++)for(let i=0;i<g[j].length;i++){const p=PAL[g[j][i]];if(p){ctx.fillStyle=p;ctx.fillRect(x+i*s,y+j*s,s,s);}}ctx.globalAlpha=1;}
@@ -74,16 +74,16 @@ function hasBarracks(){return G.blds.some(b=>b.type==='barracks'&&b.done);}
 function say(m){G.msg=m;G.msgT=4;}
 // ---- actions (data-driven command card: add entries to extend) ----
 const ACTIONS=[
- {id:'barracks',label:'Barracks',key:'b',icon:'barracks',cost:()=>CFG.barracks_cost,can:()=>true,run:()=>startPlace('barracks')},
- {id:'library',label:'Library',key:'l',icon:'library',cost:()=>CFG.library_cost,can:()=>G.nodes.some(n=>n.kind==='K'&&!n.lib),run:()=>startPlace('library')},
+ {id:'barracks',short:'BARRACKS',label:'Barracks',key:'b',icon:'barracks',cost:()=>CFG.barracks_cost,can:()=>true,run:()=>startPlace('barracks')},
+ {id:'library',short:'LIBRARY',label:'Library',key:'l',icon:'library',cost:()=>CFG.library_cost,can:()=>G.nodes.some(n=>n.kind==='K'&&!n.lib),run:()=>startPlace('library')},
 
- {id:'spears',label:'Sharper Spears',key:'1',icon:'soldier',up:true,cost:()=>CFG.spears_p,kcost:()=>CFG.spears_k,can:()=>!G.up.spears,why:'Done',run:()=>{G.up.spears=1;G.soldiers.forEach(s=>s.hp++);say('Sharper Spears: soldiers survive one extra contact');}},
- {id:'swift',label:'Faster Workers',key:'2',icon:'power',up:true,cost:()=>CFG.swift_p,kcost:()=>CFG.swift_k,can:()=>!G.up.swift,why:'Done',run:()=>{G.up.swift=1;say('Faster Workers: +25% speed');}},
- {id:'walls',label:'Stone Walls',key:'3',icon:'mount',up:true,cost:()=>CFG.walls_p,kcost:()=>CFG.walls_k,can:()=>!G.up.walls,why:'Done',run:()=>{G.up.walls=1;G.keep.max+=CFG.walls_hp;G.keep.hp=G.keep.max;say('Stone Walls: Keep reinforced and repaired');}},
+ {id:'spears',short:'SPEARS',label:'Sharper Spears',key:'1',icon:'soldier',up:true,cost:()=>CFG.spears_p,kcost:()=>CFG.spears_k,can:()=>!G.up.spears,why:'Done',run:()=>{G.up.spears=1;G.soldiers.forEach(s=>s.hp++);say('Sharper Spears: soldiers survive one extra contact');}},
+ {id:'swift',short:'SWIFT',label:'Faster Workers',key:'2',icon:'power',up:true,cost:()=>CFG.swift_p,kcost:()=>CFG.swift_k,can:()=>!G.up.swift,why:'Done',run:()=>{G.up.swift=1;say('Faster Workers: +25% speed');}},
+ {id:'walls',short:'WALLS',label:'Stone Walls',key:'3',icon:'mount',up:true,cost:()=>CFG.walls_p,kcost:()=>CFG.walls_k,can:()=>!G.up.walls,why:'Done',run:()=>{G.up.walls=1;G.keep.max+=CFG.walls_hp;G.keep.hp=G.keep.max;say('Stone Walls: Keep reinforced and repaired');}},
 ];
 const TRAIN=[
- {id:'worker',label:'Train Worker',key:'w',icon:'worker',cost:()=>CFG.worker_cost,can:()=>true,count:()=>G.wq.length,run:()=>{if(spend(CFG.worker_cost))G.wq.push(CFG.worker_time);}},
- {id:'soldier',label:'Train Soldier',key:'s',icon:'soldier',cost:()=>CFG.soldier_cost,can:()=>hasBarracks(),why:'Needs Barracks',count:()=>G.sq.length,run:()=>{if(!hasBarracks())return say('Build a Barracks first');if(spend(CFG.soldier_cost))G.sq.push(CFG.soldier_time);}},
+ {id:'worker',short:'WORKER',label:'Train Worker',key:'w',icon:'worker',cost:()=>CFG.worker_cost,can:()=>true,count:()=>G.wq.length,run:()=>{if(spend(CFG.worker_cost))G.wq.push(CFG.worker_time);}},
+ {id:'soldier',short:'SOLDIER',label:'Train Soldier',key:'s',icon:'soldier',cost:()=>CFG.soldier_cost,can:()=>hasBarracks(),why:'Needs Barracks',count:()=>G.sq.length,run:()=>{if(!hasBarracks())return say('Build a Barracks first');if(spend(CFG.soldier_cost))G.sq.push(CFG.soldier_time);}},
 ].filter(a=>a.id!=='soldier'||FEAT.soldiers);
 function spend(c){if(G.power<c){say('Need '+c+' Power');return false;}G.power-=c;return true;}
 function kc(a){return a.kcost?a.kcost():0;}
@@ -154,21 +154,20 @@ function step(dt){
 let btns=[];
 function fmtT(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 function txt(t,x,y,c,sz,al){ctx.font='bold '+(sz||6)+'px monospace';ctx.textBaseline='middle';ctx.textAlign=al||'left';ctx.fillStyle=c||'#e8e8e8';ctx.fillText(t,x,y);ctx.textAlign='left';}
-function bar(x,y,w,label,c,c2,total,r,k){const h=8;G.peak[k]=Math.max(G.peak[k],r*1.25);const f=Math.min(1,r/G.peak[k]);
- txt(label,x,y-5,c,6);txt(String(Math.floor(total)),x+w,y-5,c,6,'right');
- ctx.fillStyle='#22222a';ctx.fillRect(x,y,w,h);ctx.fillStyle=c2;ctx.fillRect(x,y,Math.round(w*f),h);ctx.fillStyle=c;ctx.fillRect(x,y,Math.round(w*f),2);
- ctx.strokeStyle='#44444f';ctx.lineWidth=0.5;ctx.strokeRect(x,y,w,h);txt(Math.round(r)+'/min',x+w/2,y+h/2+0.5,'#ffffff',6,'center');}
-function button(a,x,y,w,h,big){const en=enabled(a),hov=G.mouse.x>=x&&G.mouse.x<x+w&&G.mouse.y>=y&&G.mouse.y<y+h;
- ctx.fillStyle=en?(hov?'#3a3a48':'#2a2a34'):'#18181d';ctx.fillRect(x,y,w,h);ctx.strokeStyle=en?'#6a6a7a':'#33333a';ctx.lineWidth=0.5;ctx.strokeRect(x+.25,y+.25,w-.5,h-.5);
- const g=SPR[a.icon],sc=Math.min((big?h-4:h-10)/g.length,(big?18:w-4)/g[0].length);
- ctx.globalAlpha=en?1:0.35;spr(a.icon,big?x+3:x+(w-g[0].length*sc)/2,y+2+((big?h-4:h-10)-g.length*sc)/2,sc);ctx.globalAlpha=1;
- if(big){txt(a.label,x+22,y+5,en?'#e8e8e8':'#666',6);txt(a.cost()+' P',x+22,y+h-5,G.power>=a.cost()?'#ffd84a':'#a85a24',6);
-  if(!a.can()&&a.why)txt(a.why,x+w-2,y+h-5,'#a84a4a',5,'right');else if(a.count())txt('x'+a.count(),x+w-2,y+h-5,'#c0c0c8',6,'right');}
- else if(a.up&&G.up[a.id]){txt('DONE',x+w/2,y+h-4,'#7fd17f',5,'center');}
- else if(a.up){txt(kc(a)+'',x+w/2-4,y+h-4,G.know>=kc(a)?'#4ad8ff':'#2a5a7a',5,'center');txt(a.cost()+'',x+w/2+5,y+h-4,G.power>=a.cost()?'#ffd84a':'#a85a24',4,'center');}
- else{txt(a.cost()+'',x+w/2,y+h-4,G.power>=a.cost()?'#ffd84a':'#a85a24',5,'center');}
- if(hov&&!big)txt(a.label+': '+a.cost()+' P'+(kc(a)?' + '+kc(a)+' K':''),x+w,y-4,'#e8e8e8',5,'right');
- txt(a.key.toUpperCase(),x+w-3,y+4,'#ffd84a',5,'right');
+function bar(x,y,w,label,c,dk,total,r,k){const h=16;G.peak[k]=Math.max(G.peak[k],r*1.25);const f=Math.min(1,r/G.peak[k]);
+ txt(label,x,y-6,c,7);txt(String(Math.floor(total)),x+w,y-6,'#ffffff',8,'right');
+ ctx.fillStyle='#1c1c22';ctx.fillRect(x,y,w,h);ctx.fillStyle=c;ctx.fillRect(x,y,Math.round(w*f),h);
+ txt(Math.round(r)+'/min',x+5,y+h/2+0.5,f>0.45?'#0b0b0e':'#ffffff',8);}
+function button(a,x,y,w,h){const en=enabled(a),done=a.up&&G.up[a.id],hov=G.mouse.x>=x&&G.mouse.x<x+w&&G.mouse.y>=y&&G.mouse.y<y+h;
+ ctx.fillStyle=done?'#1f5a2a':en?(hov?'#3a3a46':'#26262e'):'#141418';ctx.fillRect(x,y,w,h);
+ const g=SPR[a.icon],ih=h*0.36,sc=Math.min(ih/g.length,(w-8)/g[0].length);
+ ctx.globalAlpha=en||done?1:0.3;spr(a.icon,x+(w-g[0].length*sc)/2,y+3+(ih-g.length*sc)/2,sc);ctx.globalAlpha=1;
+ const fs=w>40?7:5;txt(a.short,x+w/2,y+h*0.62,en||done?'#ffffff':'#55555f',fs,'center');
+ if(done)txt('DONE',x+w/2,y+h-5,'#7fff7f',fs,'center');
+ else if(a.up){txt(kc(a)+'',x+w/2-2,y+h-5,G.know>=kc(a)?'#4ad8ff':'#2a4a5a',fs,'right');txt(a.cost()+'',x+w/2+2,y+h-5,G.power>=a.cost()?'#ffd84a':'#5a4a2a',fs);}
+ else txt(a.cost()+'',x+w/2,y+h-5,G.power>=a.cost()?'#ffd84a':'#5a4a2a',fs,'center');
+ ctx.fillStyle='#ffd84a';ctx.fillRect(x,y,8,8);txt(a.key.toUpperCase(),x+4,y+4.5,'#0b0b0e',6,'center');
+ if(a.count&&a.count())txt('x'+a.count(),x+w-3,y+5,'#ffffff',fs,'right');
  btns.push({x,y,w,h,a});}
 function draw(){
  btns=[];const sh=G.shake>0?G.shake*8:0;ctx.setTransform(S,0,0,S,rnd(-sh,sh)*S,rnd(-sh,sh)*S);ctx.imageSmoothingEnabled=false;
@@ -198,17 +197,15 @@ function draw(){
  if(G.msgT>0)txt(G.msg,W/2,MH-6,'#ffd84a',6,'center');
  // bottom panel
  ctx.setTransform(S,0,0,S,0,0);
- const py=MH;ctx.fillStyle='#0f0f13';ctx.fillRect(0,py,W,UI);ctx.fillStyle='#44444f';ctx.fillRect(0,py,W,1);
- const bw=Math.min(130,Math.floor((W-210)/1.2));
- bar(6,py+14,bw,'POWER','#ffd84a','#b8921e',G.power,rate('P'),'P');
- bar(6,py+38,bw,'KNOWLEDGE','#4ad8ff','#1f86a8',G.know,rate('K'),'K');
- txt('P / K: move worker to Power / Knowledge',6,py+54,'#77778a',5);
- const tx=bw+16;TRAIN.forEach((a,i)=>button(a,tx,py+5+i*26,96,24,true));
- const cs=17,cx=W-cs*3-6,cy=py+4;
- for(let i=0;i<9;i++){const a=ACTIONS[i],x=cx+(i%3)*cs,y=cy+Math.floor(i/3)*cs;if(a)button(a,x,y,cs-1,cs-1);else{ctx.fillStyle='#141418';ctx.fillRect(x,y,cs-1,cs-1);}}
- txt('BUILD',cx-4,cy+4,'#77778a',5,'right');
- txt('Space pause  Esc cancel  Shift+R restart',cx-4,py+UI-6,'#55556a',5,'right');
- txt('v0.3',W-3,H-3,'#8a7ab8',5,'right');
+ const py=MH;ctx.fillStyle='#0b0b0e';ctx.fillRect(0,py,W,UI);
+ const cs=31,gp=3,card=cs*3+gp*2,bw=120,tw=52,gw=bw+12+tw+12+card,gx=Math.max(6,Math.floor((W-gw)/2)),ty=py+4;
+ bar(gx,py+22,bw,'POWER','#ffd84a','',G.power,rate('P'),'P');
+ bar(gx,py+64,bw,'KNOWLEDGE','#4ad8ff','',G.know,rate('K'),'K');
+ const tx=gx+bw+12,th=(card-gp)/2;TRAIN.forEach((a,i)=>button(a,tx,ty+i*(th+gp),tw,th));
+ const cx=tx+tw+12;
+ for(let i=0;i<9;i++){const a=ACTIONS[i],x=cx+(i%3)*(cs+gp),y=ty+Math.floor(i/3)*(cs+gp);if(a)button(a,x,y,cs,cs);else{ctx.fillStyle='#141418';ctx.fillRect(x,y,cs,cs);}}
+ txt('P/K assign  SPACE pause  ESC cancel',W-4,H-12,'#55555f',5,'right');
+ txt('v0.3.1',W-4,H-4,'#8a8a9a',5,'right');
  if(!G.started){ctx.fillStyle='rgba(11,11,14,.88)';ctx.fillRect(0,0,W,H);const cy=H/2-40;
   txt('ASCII ROGUE',W/2,cy,'#ffe01a',22,'center');txt('ASCII ROGUE',W/2-1,cy-1,'#ff2ea8',22,'center');txt('ASCII ROGUE',W/2-2,cy-2,'#ffe01a',22,'center');
   txt('Defend the Keep: survive '+CFG.win_waves+' enemy waves.',W/2,cy+22,'#2ee6ff',8,'center');

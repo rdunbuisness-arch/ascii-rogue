@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.1 — bold bottom panel (2026-10-11)
+- One compact, centered bottom panel: income bars, Train Worker/Soldier, and a large 3x3 command card side by side.
+- Bold minimalist UI: big flat tiles, no borders, short labels (icon + name + cost + hotkey chip), chunky high-contrast bars.
+- Top-bar metrics, pixel-art sprites and map unchanged.
+
 ## v0.3 — playable demo (2026-10-11)
 - Knowledge upgrades on the command card (each buyable once, shown DONE):
   Sharper Spears [1] (soldiers survive one extra contact), Faster Workers [2] (+25% speed),
