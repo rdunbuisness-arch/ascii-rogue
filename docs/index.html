@@ -6,7 +6,7 @@
 <script>
 "use strict";
 // SUPERHUMANITY v0.4 - chiptune arcade tower defense. Knobs below; URL params override, e.g. ?wave_first=5&cannon_dmg=3
-const VERSION='v0.4';
+const VERSION='v0.4.2';
 const FEAT={cannons:true};
 const CFG={start_power:150,start_knowledge:0,start_workers:3,
  worker_cost:40,worker_time:3,worker_speed:48,carry:5,gather_time:1,
@@ -23,9 +23,9 @@ new URLSearchParams(location.search).forEach((v,k)=>{if(k in CFG&&!isNaN(+v))CFG
 // ---- NAMES: every player-facing label (final names TBD by Strategy Officer) ----
 const NAMES={game:'Superhumanity',title:'Superhumanity',tagline:'Humanity vs {faction}. Maze them with {forcefield}s, survive {n} waves.',
  power:'Compute',knowledge:'Data',worker:'Intern',workers:'Interns',soldier:'Luddite',soldiers:'Luddites',base:'The Last Office',keep:'The Last Office',
- barracks:'Union Hall',library:'Server Farm',forcefield:'Paywall',field:'Paywall',pylon:'Post',cannon:'Disruptor',
+ barracks:'Union Hall',library:'Server Farm',forcefield:'Paywall',field:'Paywall',pylon:'Terms of Service',pylonShort:'ToS',cannon:'Disruptor',
  faction:'The Alignment',leader:'SAM-1',grunt:'Chatbot',fast:'Scraper',erratic:'Hallucinator',tank:'Unicorn',drone:'Swarm Drone',spawn:'Alignment Spawn',deposit:'Data Deposit',
- enemy:'bot',wave:'Wave',send:'Send wave',next:'Next',dmg:'Damage+',range:'Range+',walls:'Walls',spears:'Armor',done:'Done',
+ enemy:'bot',wave:'Wave',send:'Send wave',next:'Next',dmg:'Antitrust Suit',dmgShort:'Antitrust',range:'Long-Termism',rangeShort:'Long-Term',walls:'Red Tape',spears:'Tinfoil Hats',spearsShort:'Tinfoil',done:'Done',
  win:'Humanity endures',lose:'{faction} wins',start:'click or press any key',restart:'R to restart',paused:'Paused',
  hint:'N send wave  P/K assign  SPACE pause  ESC cancel  M mute'};
 const nm=t=>t.replace(/\{(\w+)\}/g,(_,k)=>NAMES[k]!=null?NAMES[k]:'{'+k+'}');
@@ -108,7 +108,7 @@ function setupSize(){const d=devicePixelRatio||1;S=Math.max(2,Math.floor(Math.mi
 function newGame(){
  setupSize();
  G={t:0,power:CFG.start_power,know:CFG.start_knowledge,workers:[],soldiers:[],enemies:[],blds:[],nodes:[],fields:[],
-  income:[],peak:{P:60,K:60},wq:[],sq:[],place:null,anchor:null,mouse:{x:0,y:0},msg:nm('Link rocks and {pylon}s with {forcefield}s, then press N to send a wave.'),msgT:6,
+  income:[],peak:{P:60,K:60},wq:[],sq:[],place:null,anchor:null,mouse:{x:0,y:0},msg:nm('Link rocks and {pylonShort}s with {forcefield}s, then press N to send a wave.'),msgT:6,
   wave:0,nextWave:CFG.wave_first,spawnQ:0,spawnT:0,started:false,parts:[],beams:[],shake:0,over:false,won:false,paused:false,kills:0,up:{},peakPop:0,totP:0,totK:0};
  G.cellB=new Array(C*R).fill(null);
  const ky=Math.floor(R/2)-2;G.spawn=idx(C-1,Math.floor(R/2));
@@ -152,7 +152,7 @@ const TRAIN=[
  {id:'worker',key:'w',icon:'intern',cost:()=>CFG.worker_cost,can:()=>true,count:()=>G.wq.length,run:()=>{if(spend(CFG.worker_cost))G.wq.push(CFG.worker_time);}},
  {id:'soldier',key:'s',icon:'luddite',cost:()=>CFG.soldier_cost,can:()=>hasBarracks(),why:'Needs '+NAMES.barracks,count:()=>G.sq.length,run:()=>{if(spend(CFG.soldier_cost))G.sq.push(CFG.soldier_time);}},
 ];
-[...ACTIONS,...TRAIN,SEND].forEach(a=>a.short=NAMES[a.id]);
+[...ACTIONS,...TRAIN,SEND].forEach(a=>a.short=NAMES[a.id+'Short']||NAMES[a.id]);
 function spend(c){if(G.power<c){say('Need '+c+' '+NAMES.power);SFX.no();return false;}G.power-=c;return true;}
 const kc=a=>a.kcost?a.kcost():0;
 const enabled=a=>a.can()&&G.power>=a.cost()&&G.know>=kc(a);
@@ -160,7 +160,7 @@ function doAction(a){if(G.over||G.paused)return;if(!a.can()){say(a.why||'Not ava
  if(G.power<a.cost()||G.know<kc(a)){say('Need '+a.cost()+' '+NAMES.power+(kc(a)?' + '+kc(a)+' '+NAMES.knowledge:''));SFX.no();return;}
  if(a.up){G.power-=a.cost();G.know-=kc(a);SFX.place();}a.run();}
 function startPlace(type){G.place=type;G.anchor=null;
- say(type==='field'?'Click a rock or '+NAMES.pylon+', then another in line (chain; Esc ends)':type==='library'?'Place on a blue '+NAMES.knowledge+' deposit':'Click map to place (Esc cancels)');}
+ say(type==='field'?'Click a rock or '+NAMES.pylonShort+', then another in line (chain; Esc ends)':type==='library'?'Place on a blue '+NAMES.knowledge+' deposit':'Click map to place (Esc cancels)');}
 // ---- placement ----
 function ghost(){const B=BLD[G.place],m=G.mouse;let cx=Math.floor(m.x/T)-Math.floor(B.w/2),cy=Math.floor(m.y/T)-Math.floor(B.h/2),node=null;
  if(G.place==='library'){let best=null,bd=48;G.nodes.forEach(n=>{if(n.kind==='K'&&!n.lib){const d=Math.hypot(n.x+8-m.x,n.y+8-m.y);if(d<bd){bd=d;best=n;}}});
@@ -179,7 +179,7 @@ const isAnchor=c=>c>=0&&(G.g[c]===CORE.ROCK||(G.cellB[c]&&G.cellB[c].type==='pyl
 function fieldLine(a,b){const ax=a%C,ay=(a/C)|0,bx=b%C,by=(b/C)|0;if(a===b||(ax!==bx&&ay!==by))return null;
  const cells=[],dx=Math.sign(bx-ax),dy=Math.sign(by-ay);for(let x=ax+dx,y=ay+dy;x!==bx||y!==by;x+=dx,y+=dy)cells.push(idx(x,y));
  if(!cells.length||cells.length>CFG.field_max)return null;return{cells,hz:ay===by};}
-function fieldClick(c){if(!isAnchor(c)){say('Fields anchor on rocks or '+NAMES.pylon+'s');SFX.no();return;}
+function fieldClick(c){if(!isAnchor(c)){say('Fields anchor on rocks or '+NAMES.pylonShort+'s');SFX.no();return;}
  if(G.anchor==null||G.anchor===c){G.anchor=c;return;}
  const L=fieldLine(G.anchor,c);if(!L){say('Anchors must be in a straight line, gap 1-'+CFG.field_max);SFX.no();return;}
  const cost=L.cells.length*CFG.field_cost;if(G.power<cost){say('Need '+cost+' '+NAMES.power);SFX.no();return;}

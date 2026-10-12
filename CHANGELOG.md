@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.2 — renames (2026-10-11)
+- Post → Terms of Service (tile: TOS); Damage+ → Antitrust Suit (tile: ANTITRUST); Range+ → Long-Termism (tile: LONG-TERM);
+  Walls → Red Tape; Armor → Tinfoil Hats (tile: TINFOIL). Corner tag v0.4.2. No gameplay changes.
+
 ## v0.4 — Superhumanity (2026-10-11)
 - Pivot: fast chiptune arcade tower defense. Humanity vs. superintelligent humanoid robots.
 - Grid map with rock blocks (can't build on them). Robots spawn at the right edge.
