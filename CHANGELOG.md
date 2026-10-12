@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.3 — layout fix (2026-10-11)
+- Fix: the top HUD bar no longer covers the top map rows. The HUD has its own strip above the map, the panel its
+  own strip below; the map is offset and sized to the space between (screen shake and drawing are clipped to it).
+- Toast messages moved into the top strip (they used to sit over the bottom map rows).
+- New `tests/layout.test.js` (Playwright): at 7 window sizes, asserts no HUD rectangle intersects the map's
+  playable cells, and that robots spawn, path and reach the base through the top and bottom rows.
+
 ## v0.4.2 — renames (2026-10-11)
 - Post → Terms of Service (tile: TOS); Damage+ → Antitrust Suit (tile: ANTITRUST); Range+ → Long-Termism (tile: LONG-TERM);
   Walls → Red Tape; Armor → Tinfoil Hats (tile: TINFOIL). Corner tag v0.4.2. No gameplay changes.

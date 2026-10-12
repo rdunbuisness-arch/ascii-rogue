@@ -6,7 +6,7 @@
 <script>
 "use strict";
 // SUPERHUMANITY v0.4 - chiptune arcade tower defense. Knobs below; URL params override, e.g. ?wave_first=5&cannon_dmg=3
-const VERSION='v0.4.2';
+const VERSION='v0.4.3';
 const FEAT={cannons:true};
 const CFG={start_power:150,start_knowledge:0,start_workers:3,
  worker_cost:40,worker_time:3,worker_speed:48,carry:5,gather_time:1,
@@ -84,7 +84,7 @@ const CORE=(()=>{
  return{FREE,ROCK,BLD,FIELD,NODE,GOAL,nbrs,bfs,canBlock,next};})();
 if(typeof module!=='undefined')module.exports=CORE;
 // CORE-END
-const T=8,UI=106;
+const T=8,UI=106,TOP=14; // TOP = HUD strip above the map, UI = panel strip below it
 let S=0,W=0,H=0,MH=0,C=0,R=0;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 function spr(n,x,y,s,a){s=s||1;const g=SPRITES[n];if(a!=null)ctx.globalAlpha=a;for(let j=0;j<g.length;j++)for(let i=0;i<g[j].length;i++){const p=PAL[g[j][i]];if(p){ctx.fillStyle=p;ctx.fillRect(x+i*s,y+j*s,s,s);}}ctx.globalAlpha=1;}
@@ -104,7 +104,7 @@ const SFX={shot:()=>{if(G.t-lastShot>0.07){lastShot=G.t;beep(1200,0.06,'square',
  hit:()=>beep(90,0.3,'square',0.06,40),wave:()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.09,'square',0.04),i*80));},
  place:()=>beep(660,0.05,'triangle',0.05,990),no:()=>beep(160,0.1,'square',0.04)};
 function setupSize(){const d=devicePixelRatio||1;S=Math.max(2,Math.floor(Math.min(innerWidth*d/420,innerHeight*d/260)));
- W=Math.floor(innerWidth*d/S);H=Math.floor(innerHeight*d/S);C=Math.floor(W/T);R=Math.floor((H-UI)/T);MH=R*T;}
+ W=Math.floor(innerWidth*d/S);H=Math.floor(innerHeight*d/S);C=Math.floor(W/T);R=Math.floor((H-UI-TOP)/T);MH=R*T;}
 function newGame(){
  setupSize();
  G={t:0,power:CFG.start_power,know:CFG.start_knowledge,workers:[],soldiers:[],enemies:[],blds:[],nodes:[],fields:[],
@@ -246,7 +246,7 @@ function step(dt){
  if(G.shake>0)G.shake-=dt;if(G.keep.flash>0)G.keep.flash-=dt;
 }
 // ---- rendering ----
-let btns=[];
+let btns=[],hud=[],tbEnd=0;
 const fmtT=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 function txt(t,x,y,c,sz,al,fit){t=String(t).toUpperCase();if(fit){ctx.font='bold '+sz+'px monospace';while(sz>3&&ctx.measureText(t).width>fit){sz-=0.5;ctx.font='bold '+sz+'px monospace';}}ctx.font='bold '+(sz||6)+'px monospace';ctx.textBaseline='middle';ctx.textAlign=al||'left';ctx.fillStyle=c||'#e8e8e8';ctx.fillText(t,x,y);ctx.textAlign='left';}
 function bar(x,y,w,label,c,total,r,k){const h=16;G.peak[k]=Math.max(G.peak[k],r*1.25);const f=Math.min(1,r/G.peak[k]);
@@ -265,9 +265,11 @@ function button(a,x,y,w,h){const en=enabled(a),done=a.up&&G.up[a.id],act=G.place
  else txt(a.cost()+(a.id==='field'?'/c':''),x+w/2,y+h-5,G.power>=a.cost()?'#ffe000':'#5a4a2a',fs,'center');
  ctx.fillStyle='#ffe000';ctx.fillRect(x,y,8,8);txt(a.key.toUpperCase(),x+4,y+4.5,'#120a24',6,'center');
  if(a.count&&a.count())txt('x'+a.count(),x+w-3,y+5,'#ffffff',fs,'right');
- btns.push({x,y,w,h,a});}
+ btns.push({x,y,w,h,a});hud.push({x,y:y+TOP,w,h,what:a.id});}
 function draw(){
- btns=[];const sh=G.shake>0?G.shake*8:0;ctx.setTransform(S,0,0,S,rnd(-sh,sh)*S,rnd(-sh,sh)*S);ctx.imageSmoothingEnabled=false;
+ btns=[];hud=[];const sh=G.shake>0?G.shake*8:0;ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#120a24';ctx.fillRect(0,0,cv.width,cv.height);
+ ctx.save();ctx.beginPath();ctx.rect(0,TOP*S,W*S,MH*S);ctx.clip();
+ ctx.setTransform(S,0,0,S,rnd(-sh,sh)*S,(TOP+rnd(-sh,sh))*S);ctx.imageSmoothingEnabled=false;
  ctx.fillStyle='#1d1238';ctx.fillRect(0,0,W,MH);
  ctx.fillStyle='#22163f';for(let y=0;y<R;y++)for(let x=0;x<C;x++)if((x+y)%2)ctx.fillRect(x*T,y*T,T,T);
  // spawn zone + path preview
@@ -300,26 +302,27 @@ function draw(){
   if(c>=0){const p=ctr(c);ctx.strokeStyle=isAnchor(c)?'#7aff3a':'#6a5a8a';ctx.strokeRect(p.x-4.5,p.y-4.5,9,9);}}
  else if(G.place){const gh=ghost(),B=gh.B;spr(B.spr,gh.cx*T,gh.cy*T,B.sc,0.5);ctx.strokeStyle=gh.ok?'#7aff3a':'#ff2a4a';ctx.lineWidth=1;ctx.strokeRect(gh.cx*T+.5,gh.cy*T+.5,B.w*T-1,B.h*T-1);
   if(G.place==='cannon'){ctx.strokeStyle='rgba(255,74,216,.5)';ctx.beginPath();ctx.arc(gh.cx*T+4,gh.cy*T+4,cRange(),0,6.283);ctx.stroke();}}
- // top bar
+ ctx.restore();
+ // top bar (own strip above the map)
+ ctx.setTransform(S,0,0,S,0,0);ctx.fillStyle='#1a1030';ctx.fillRect(0,0,W,TOP);hud.push({x:0,y:0,w:W,h:TOP,what:'topbar'});
  {let x=4;const items=[[NAMES.power+' '+Math.floor(G.power),'#ffe000'],[NAMES.knowledge+' '+Math.floor(G.know),'#00e5ff'],[NAMES.workers+' '+G.workers.length,'#e8e8e8'],[NAMES.soldiers+' '+G.soldiers.length,'#7aff3a']];
-  ctx.fillStyle='rgba(11,11,14,.7)';ctx.fillRect(0,0,W,12);
-  items.forEach(([t,c])=>{txt(t,x,6,c,6);ctx.font='bold 6px monospace';x+=ctx.measureText(t).width+6;});
+  items.forEach(([t,c])=>{txt(t,x,TOP/2,c,6);ctx.font='bold 6px monospace';const w=ctx.measureText(t.toUpperCase()).width;hud.push({x,y:TOP/2-3,w,h:6,what:t});x+=w+6;});
   const pl=CFG.auto_waves&&G.wave<CFG.win_waves&&G.nextWave<5,sz=pl?6+2*Math.abs(Math.sin(G.t*6)):6;
   const t=G.wave<CFG.win_waves?(CFG.auto_waves?NAMES.wave+' '+(G.wave+1)+' in '+fmtT(G.nextWave)+' (~'+waveSize(G.wave+1)+')':NAMES.next+': '+NAMES.wave+' '+(G.wave+1)+'/'+CFG.win_waves+' (~'+waveSize(G.wave+1)+')'):'FINAL '+NAMES.wave+' - '+(G.enemies.length+G.spawnQ)+' left';
-  txt(t,x,6,pl&&Math.floor(G.t*6)%2?'#ffffff':'#ff2a4a',sz);}
- txt(NAMES.hint,W-4,6,'#6a5a8a',5,'right');
- if(G.msgT>0)txt(G.msg,W/2,MH-6,'#ffe000',6,'center');
+  txt(t,x,TOP/2,pl&&Math.floor(G.t*6)%2?'#ffffff':'#ff2a4a',sz);hud.push({x,y:TOP/2-sz/2,w:ctx.measureText(t.toUpperCase()).width,h:sz,what:'wave'});tbEnd=x+ctx.measureText(t.toUpperCase()).width;}
+ {const room=W-4-tbEnd-8;if(G.msgT>0)txt(G.msg,W-4,TOP/2,'#ffe000',6,'right',room);else txt(NAMES.hint,W-4,TOP/2,'#6a5a8a',5,'right',room);}
  // bottom panel
- ctx.setTransform(S,0,0,S,0,0);
- const py=MH;ctx.fillStyle='#120a24';ctx.fillRect(0,py,W,H-py);
+ ctx.setTransform(S,0,0,S,0,TOP*S); // panel strip below the map (same y-origin as the map, so clicks share coords)
+ const py=MH;ctx.fillStyle='#120a24';ctx.fillRect(0,py,W,H-TOP-py);hud.push({x:0,y:TOP+py,w:W,h:H-TOP-py,what:'panel'});
  const cs=31,gp=3,card=cs*3+gp*2,bw=120,tw=52,gw=bw+12+tw+12+card+12+tw,gx=Math.max(6,Math.floor((W-gw)/2)),ty=py+4;
- bar(gx,py+22,bw,NAMES.power,'#ffe000',G.power,rate('P'),'P');
+ hud.push({x:gx,y:TOP+py+16,w:bw,h:64,what:'bars'});bar(gx,py+22,bw,NAMES.power,'#ffe000',G.power,rate('P'),'P');
  bar(gx,py+64,bw,NAMES.knowledge,'#00e5ff',G.know,rate('K'),'K');
  const tx=gx+bw+12,th=(card-gp)/2;TRAIN.forEach((a,i)=>button(a,tx,ty+i*(th+gp),tw,th));
  const cx=tx+tw+12;
  for(let i=0;i<9;i++){const a=ACTIONS[i],x=cx+(i%3)*(cs+gp),y=ty+Math.floor(i/3)*(cs+gp);if(a)button(a,x,y,cs,cs);else{ctx.fillStyle='#180f30';ctx.fillRect(x,y,cs,cs);}}
  button(SEND,cx+card+12,ty,tw,card);
- txt(VERSION,W-4,H-4,'#8a8a9a',5,'right');
+ txt(VERSION,W-4,H-TOP-4,'#8a8a9a',5,'right');
+ ctx.setTransform(S,0,0,S,0,0);
  if(!G.started){ctx.fillStyle='rgba(11,11,14,.9)';ctx.fillRect(0,0,W,H);const cy=H/2-40;
   {const tt=NAMES.title.toUpperCase(),cw=15,col=['#ffe000','#00e5ff','#ff4ad8','#7aff3a'];[...tt].forEach((ch,i)=>txt(ch,W/2-(tt.length-1)*cw/2+i*cw,cy+(Math.floor(performance.now()/120+i)%4===0?-1:0),col[i%4],22,'center'));
   txt('humanity vs '+NAMES.faction+' - led by '+NAMES.leader,W/2,cy+14,'#ffffff',6,'center');}
@@ -327,19 +330,19 @@ function draw(){
   ['Q '+NAMES.pylon+'   F '+NAMES.field+'   C '+NAMES.cannon+'   B '+NAMES.barracks+'   L '+NAMES.library,'W '+NAMES.worker+'   S '+NAMES.soldier+'   1-4 upgrades   P/K assign','N '+NAMES.send+'   SPACE pause   ESC cancel   M mute   R restart']
    .forEach((l,i)=>txt(l,W/2,cy+40+i*11,'#e8e8ff',6,'center'));
   if(Math.floor(performance.now()/500)%2)txt(NAMES.start,W/2,cy+82,'#7aff3a',8,'center');}
- if(G.paused&&!G.over){ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,MH);txt(NAMES.paused,W/2,MH/2,'#e8e8e8',12,'center');}
+ if(G.paused&&!G.over){ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,TOP,W,MH);txt(NAMES.paused,W/2,TOP+MH/2,'#e8e8e8',12,'center');}
  if(G.over){ctx.fillStyle='rgba(0,0,0,.78)';ctx.fillRect(0,0,W,H);txt(nm(G.won?NAMES.win:NAMES.lose),W/2,H/2-24,G.won?'#7fff6a':'#ff2a4a',14,'center');
   txt('Time '+fmtT(G.t)+'   '+NAMES.wave+'s '+G.wave+'/'+CFG.win_waves+'   '+NAMES.enemy+'s destroyed '+G.kills,W/2,H/2-6,'#e8e8e8',7,'center');
   txt('Peak population '+G.peakPop+'   '+NAMES.power+' gathered '+G.totP+'   '+NAMES.knowledge+' gathered '+G.totK,W/2,H/2+6,'#e8e8e8',7,'center');
   txt(NAMES.restart,W/2,H/2+22,'#ffe000',7,'center');}
 }
 function resize(){const d=devicePixelRatio||1;cv.width=Math.round(innerWidth*d);cv.height=Math.round(innerHeight*d);cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';S=Math.min(cv.width/W,cv.height/H);}
-function toWorld(e){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;return{x:(e.clientX-r.left)*d/S,y:(e.clientY-r.top)*d/S};}
+function toWorld(e){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;return{x:(e.clientX-r.left)*d/S,y:(e.clientY-r.top)*d/S-TOP};} // map/panel coords (top strip is negative y)
 cv.addEventListener('mousemove',e=>{G.mouse=toWorld(e);});
 cv.addEventListener('contextmenu',e=>{e.preventDefault();G.place=null;G.anchor=null;});
 cv.addEventListener('mousedown',e=>{if(!G.started){G.started=true;return;}if(e.button!==0)return;G.mouse=toWorld(e);const m=G.mouse;
  const b=btns.find(b=>m.x>=b.x&&m.x<b.x+b.w&&m.y>=b.y&&m.y<b.y+b.h);if(b){doAction(b.a);return;}
- if(!G.place||m.y>=MH||G.over||G.paused)return;if(G.place==='field')fieldClick(cellAt(m.x,m.y));else placeBld();});
+ if(!G.place||m.y<0||m.y>=MH||G.over||G.paused)return;if(G.place==='field')fieldClick(cellAt(m.x,m.y));else placeBld();});
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!G.started){G.started=true;e.preventDefault();return;}
  if(k==='r'&&(G.over||e.shiftKey)){newGame();resize();G.started=true;return;}
  if(G.over)return;
@@ -352,5 +355,5 @@ addEventListener('resize',resize);
 let last=performance.now();
 function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;if(G.started&&!G.over&&!G.paused)step(dt);draw();requestAnimationFrame(loop);}
 newGame();resize();requestAnimationFrame(loop);
-Object.assign(window,{__G:()=>G,__step:step,__CFG:CFG,__S:()=>S,__CORE:CORE,__dims:()=>({C,R,T}),__place:(type,cx,cy)=>{G.place=type;G.mouse={x:cx*T+T/2,y:cy*T+T/2};return placeBld();},__field:(a,b)=>{G.place='field';G.anchor=null;fieldClick(a);fieldClick(b);return G.fields.length;}});
+Object.assign(window,{__recalc:recalc,__layout:()=>({S,W,H,TOP,map:{x:0,y:TOP,w:C*T,h:MH},hud:hud.slice(),C,R}),__G:()=>G,__step:step,__CFG:CFG,__S:()=>S,__CORE:CORE,__dims:()=>({C,R,T}),__place:(type,cx,cy)=>{G.place=type;G.mouse={x:cx*T+T/2,y:cy*T+T/2};return placeBld();},__field:(a,b)=>{G.place='field';G.anchor=null;fieldClick(a);fieldClick(b);return G.fields.length;}});
 </script></body></html>
