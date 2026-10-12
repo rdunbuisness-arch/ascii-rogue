@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCII RTS — Visual Mockup</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0b0b0b;
+    color: #c8c8c8;
+    overflow: hidden;
+  }
+  #wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+  #scene {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    line-height: 1.15;
+    white-space: pre;
+    background: #0b0b0b;
+  }
+</style>
+</head>
+<body>
+<div id="wrap"><pre id="scene"></pre></div>
+<script>
+(function () {
+  var sceneEl = document.getElementById("scene");
+  var sceneText = "";
+  var rules = [];
+
+  function esc(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function isAlnum(ch) {
+    return !!ch && /[A-Za-z0-9]/.test(ch);
+  }
+
+  function ruleIsAlnumWord(token) {
+    return /^[A-Za-z0-9]+$/.test(token);
+  }
+
+  // Alnum rules: skip when glued into a different word (Soldier vs s).
+  // Same-glyph runs (TTT, xxx) still match letter-by-letter.
+  function blockedByWord(tok, before, after) {
+    if (!ruleIsAlnumWord(tok)) return false;
+    if (tok.length === 1) {
+      return (isAlnum(before) && before !== tok) || (isAlnum(after) && after !== tok);
+    }
+    return isAlnum(before) || isAlnum(after);
+  }
+
+  function colorizeLine(line) {
+    var out = "";
+    var i = 0;
+    while (i < line.length) {
+      var matched = null;
+      for (var r = 0; r < rules.length; r++) {
+        var tok = rules[r].token;
+        if (line.substr(i, tok.length) === tok) {
+          var before = i > 0 ? line.charAt(i - 1) : "";
+          var after = i + tok.length < line.length ? line.charAt(i + tok.length) : "";
+          if (blockedByWord(tok, before, after)) continue;
+          matched = rules[r];
+          break;
+        }
+      }
+      if (matched) {
+        out += '<span style="color:' + matched.color + '">' + esc(matched.token) + "</span>";
+        i += matched.token.length;
+      } else {
+        out += esc(line.charAt(i));
+        i += 1;
+      }
+    }
+    return out;
+  }
+
+  function sceneLines() {
+    var lines = sceneText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    if (lines.length && lines[lines.length - 1] === "") lines.pop();
+    return lines;
+  }
+
+  function render() {
+    sceneEl.innerHTML = sceneLines().map(colorizeLine).join("\n");
+    scale();
+  }
+
+  function scale() {
+    if (!sceneText) return;
+    var lines = sceneLines();
+    var cols = 0;
+    for (var i = 0; i < lines.length; i++) cols = Math.max(cols, lines[i].length);
+    var rows = lines.length || 1;
+    cols = cols || 1;
+    var vw = window.innerWidth * 0.95;
+    var vh = window.innerHeight * 0.95;
+    var byW = vw / (cols * 0.6);
+    var byH = vh / rows;
+    var px = Math.max(4, Math.floor(Math.min(byW, byH)));
+    sceneEl.style.fontSize = px + "px";
+  }
+
+  function parseColors(text) {
+    var list = [];
+    var lines = text.replace(/\r\n/g, "\n").split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line || line.charAt(0) === "#") continue;
+      var eq = line.lastIndexOf("=");
+      if (eq <= 0) continue;
+      var token = line.slice(0, eq);
+      var color = line.slice(eq + 1).trim();
+      if (token && color) list.push({ token: token, color: color });
+    }
+    list.sort(function (a, b) { return b.token.length - a.token.length; });
+    rules = list;
+  }
+
+  function load() {
+    var t = Date.now();
+    return Promise.all([
+      fetch("scene.txt?t=" + t).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }),
+      fetch("colors.txt?t=" + t).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    ]).then(function (pair) {
+      sceneText = pair[0];
+      parseColors(pair[1]);
+      render();
+    }).catch(function (err) {
+      sceneEl.textContent = "Failed to load mockup: " + err;
+    });
+  }
+
+  window.addEventListener("resize", scale);
+  load();
+  setInterval(load, 3000);
+})();
+</script>
+</body>
+</html>

@@ -25,3 +25,5 @@
 - How do players control things long-term: cursor selection, groups, or only global commands?
 - Should nodes deplete by default? Multiple bases?
 - Pathing/obstacles, or keep straight-line movement?
+
+- 2026-10-11 — Visual iteration happens via chat mockups plus a static mockup page (`docs/mockup/`); game logic waits until the look is settled.
