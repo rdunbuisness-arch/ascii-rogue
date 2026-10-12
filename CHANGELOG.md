@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.4 — Superhumanity (2026-10-11)
+- Pivot: fast chiptune arcade tower defense. Humanity vs. superintelligent humanoid robots.
+- Grid map with rock blocks (can't build on them). Robots spawn at the right edge.
+- Pylons [Q] and force fields [F]: a field links two rocks/pylons in a straight line and blocks robots.
+  Fields chain from the last anchor.
+- Robots follow a BFS flow field to the Keep, recomputed whenever the grid changes; a red dotted
+  line previews their route. Any placement that would seal the Keep off is rejected, so you build a maze.
+- Plasma cannons [C] auto-fire at the robot closest to the Keep in range. Knowledge upgrades:
+  DAMAGE+ [1], RANGE+ [2], plus WALLS [3] and soldier ARMOR [4]. Soldiers remain as backup.
+- Robots have HP (grows each wave) and pay a small Power bounty when destroyed.
+- Faster pacing: first wave at 20s, waves every 25s, quicker gathering/training, faster robots.
+- Chiptune SFX (M mutes). New start screen title. Top bar keeps Power, Knowledge, workers, soldiers, next wave + size.
+- All labels in a NAMES table and pixel art in a SPRITES table (placeholders for final names/art).
+- Tests: `node tests/path.test.js` (pathfinding/anti-seal) and `tests/play.test.js` (Playwright: placement, maze, cannons kill robots, win, restart).
+
 ## v0.3.1 — bold bottom panel (2026-10-11)
 - One compact, centered bottom panel: income bars, Train Worker/Soldier, and a large 3x3 command card side by side.
 - Bold minimalist UI: big flat tiles, no borders, short labels (icon + name + cost + hotkey chip), chunky high-contrast bars.
