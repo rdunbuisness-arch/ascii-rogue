@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.5 — build-order tuning (2026-10-11)
+- Audio merged: GameAudio chiptune music (starts on first click/key) + SFX; M key and mute button.
+- Node queue: one Intern mines a node at a time; Interns pick the node with the shortest wait.
+- Supply cap: The Market 12, Server Farm +6, Workplace +4; shown as SUPPLY used/cap in the top strip.
+- Strategy Officer numbers: start 100 Compute; Intern 50/6s (gather 1.5s); Disruptor 100 with an 8s build;
+  Workplace 150/15s; Server Farm 75/12s; Human 50/6s; upgrades Antitrust 30D+50C, Long-Termism 50D+75C,
+  Red Tape 60D+75C, Tinfoil Hats 25D+40C.
+- Threat: attack_dmg stays 10; wave_base 4 -> 6. Send Wave stays the default (auto_waves knob, wave_first 25).
+- Compute nodes now spawn 48-100px from the base (Data 80-170px) so maps are evenly fair.
+- Humans (were Luddites) are single-use snipers: auto-fire at the nearest robot within 3.5x Disruptor range,
+  kill any non-Unicorn outright, deal 8 to Unicorns, and are consumed.
+- Tinfoil Hats reworked: Humans deal 2x damage to Unicorns (old "survive one extra hit" no longer applies).
+- Renames: Luddite -> Human, Union Hall -> Workplace, The Last Office -> The Market.
+- Tests: new tests/v05.test.js (node queue, supply cap, Human one-shot); all suites updated and passing.
+
 ## v0.4.3 — layout fix (2026-10-11)
 - Fix: the top HUD bar no longer covers the top map rows. The HUD has its own strip above the map, the panel its
   own strip below; the map is offset and sized to the space between (screen shake and drawing are clipped to it).
