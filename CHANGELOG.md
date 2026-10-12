@@ -7,9 +7,9 @@
 - Win condition: survive 10 waves (`?win_waves=N`). Victory and game-over screens show time,
   waves, attackers stopped, peak population, Power/Knowledge gathered. R restarts.
 - Start screen with title, goal and controls; click or any key starts.
-- Brighter arcade palette; death particles and hit flashes, screen shake when the Keep is hit,
+- Juice (mockup palette and HUD kept): death particles and hit flashes, screen shake when the Keep is hit,
   wave countdown pulses under 5s.
-- Version tag in the corner.
+- Version tag in the corner. Top bar keeps the mockup metrics (Power, Knowledge, workers, soldiers, next wave + size).
 
 ## v0.2 — pixel RTS (2026-10-11)
 - Single-file pixel-art build (`docs/index.html`) using the mockup sprites; map fills the window.

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>ASCII Rogue v0.3</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>html,body{margin:0;height:100%;background:#120e24;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:crosshair}</style>
+<style>html,body{margin:0;height:100%;background:#0b0b0e;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:crosshair}</style>
 </head><body><canvas id="c"></canvas>
 <script>
 "use strict";
@@ -16,8 +16,8 @@ const CFG={start_power:100,start_knowledge:0,start_workers:3,
  spears_k:40,spears_p:50,swift_k:30,swift_p:30,walls_k:50,walls_p:80,walls_hp:50,swift_mult:1.25,wave_interval:45,wave_base:3,wave_growth:2,
  power_nodes:3,knowledge_nodes:2,rate_window:30};
 new URLSearchParams(location.search).forEach((v,k)=>{if(k in CFG&&!isNaN(+v))CFG[k]=+v;});
-const PAL={'.':null,K:'#0b0b0e',Y:'#ffe01a',y:'#e09a00',C:'#2ee6ff',c:'#0a8fd0',R:'#ff2e4a',r:'#c0102a',G:'#5cff5c',g:'#1fb83a',
- B:'#ffb84a',b:'#b8641e',M:'#8a8a8a',m:'#5a5a5a',W:'#e8e8e8',F:'#2eea4a',f:'#109a2a',A:'#2a8aff',a:'#1458e0',S:'#c8d0ff',s:'#6a78ff',O:'#ffd0a0',D:'#8a4a1e'};
+const PAL={'.':null,K:'#0b0b0e',Y:'#ffd84a',y:'#b8921e',C:'#4ad8ff',c:'#1f86a8',R:'#ff4a4a',r:'#a82424',G:'#7fd17f',g:'#3f8a3f',
+ B:'#d8b47a',b:'#8a6a3a',M:'#8a8a8a',m:'#5a5a5a',W:'#e8e8e8',F:'#3fae4a',f:'#22702a',A:'#3a7bd5',a:'#2a5aa0',S:'#d0d0ff',s:'#8080b0',O:'#e0c8a8',D:'#4a3a2a'};
 const SPR={
 worker:["...OO...","...OO...","..WWWW..","..WWWW..","...WW...","..W..W..","..W..W..","........"],
 power:["......Y.",".....YYY","...OO.Y.","...OO...","..WWWW..","...WW...","..W..W..","........"],
@@ -172,8 +172,8 @@ function button(a,x,y,w,h,big){const en=enabled(a),hov=G.mouse.x>=x&&G.mouse.x<x
  btns.push({x,y,w,h,a});}
 function draw(){
  btns=[];const sh=G.shake>0?G.shake*8:0;ctx.setTransform(S,0,0,S,rnd(-sh,sh)*S,rnd(-sh,sh)*S);ctx.imageSmoothingEnabled=false;
- ctx.fillStyle='#1a1430';ctx.fillRect(0,0,W,MH);
- for(let y=0;y<MH;y+=8)for(let x=0;x<W;x+=16){ctx.fillStyle=((y/8+x/16)%3?'#241c44':'#2c2252');ctx.fillRect(x+3,y+3,2,2);}
+ ctx.fillStyle='#16161b';ctx.fillRect(0,0,W,MH);
+ for(let y=0;y<MH;y+=8)for(let x=0;x<W;x+=16){ctx.fillStyle=((y/8+x/16)%3?'#1d1d23':'#222229');ctx.fillRect(x+3,y+3,2,2);}
  G.deco.forEach(d=>spr(d.t,d.x,d.y));
  spr('lair',G.lair.x,G.lair.y,2);
  G.nodes.forEach(n=>{if(!n.lib)spr(n.kind==='P'?'crystal':'lore',n.x,n.y);});
@@ -187,16 +187,18 @@ function draw(){
  for(const q of G.parts){ctx.globalAlpha=Math.min(1,q.life*3);ctx.fillStyle=q.c;const z=q.big?10:2;ctx.fillRect(q.x-z/2,q.y-z/2,z,z);}ctx.globalAlpha=1;
  if(G.place){const g=ghostRect(),B=BLD[G.place];spr(B.spr,g.r.x,g.r.y,B.sc,0.5);ctx.strokeStyle=g.ok?'#7fd17f':'#ff4a4a';ctx.lineWidth=1;ctx.strokeRect(g.r.x+.5,g.r.y+.5,g.r.w-1,g.r.h-1);
   if(G.place==='library')G.nodes.forEach(n=>{if(n.kind==='K'&&!n.lib){ctx.strokeStyle='#4ad8ff';ctx.strokeRect(n.x-1.5,n.y-1.5,17,17);}});}
- // top info
- const pw=G.workers.filter(w=>w.job==='P').length,kw=G.workers.length-pw;
- let info='WORKERS '+G.workers.length+' ('+pw+'P/'+kw+'K)';if(FEAT.soldiers)info+='   SOLDIERS '+G.soldiers.length;
- txt(info,4,6,'#e8e8e8',6);
- if(FEAT.waves){const pulse=G.wave<CFG.win_waves&&G.nextWave<5,sz=pulse?6+2*Math.abs(Math.sin(G.t*6)):6;
-  txt(G.wave<CFG.win_waves?'WAVE '+(G.wave+1)+'/'+CFG.win_waves+' in '+fmtT(G.nextWave)+' (~'+waveSize(G.wave+1)+')   attackers '+G.enemies.length:'FINAL WAVE - clear '+G.enemies.length+' attackers!',W-4,6+(sz-6)/2,pulse?(Math.floor(G.t*6)%2?'#ffffff':'#ff3b3b'):'#ff4a4a',sz,'right');}
+ // top bar (mockup HUD)
+ {let x=4;const items=[['POWER '+Math.floor(G.power),'#ffd84a'],['KNOWLEDGE '+Math.floor(G.know),'#4ad8ff'],['WORKERS '+G.workers.length,'#e8e8e8']];
+  if(FEAT.soldiers)items.push(['SOLDIERS '+G.soldiers.length,'#d0d0ff']);
+  items.forEach(([t,c])=>{txt(t,x,6,c,6);ctx.font='bold 6px monospace';x+=ctx.measureText(t).width+5;});
+  if(FEAT.waves){const pulse=G.wave<CFG.win_waves&&G.nextWave<5,sz=pulse?6+2*Math.abs(Math.sin(G.t*6)):6;
+   const t=G.wave<CFG.win_waves?'WAVE '+(G.wave+1)+' in '+fmtT(G.nextWave)+' (~'+waveSize(G.wave+1)+')':'FINAL WAVE - '+G.enemies.length+' left';
+   txt(t,x,6,pulse&&Math.floor(G.t*6)%2?'#ffffff':'#ff4a4a',sz);}
+  if(FEAT.waves)txt('survive '+CFG.win_waves+' waves',W-4,6,'#77778a',5,'right');}
  if(G.msgT>0)txt(G.msg,W/2,MH-6,'#ffd84a',6,'center');
  // bottom panel
  ctx.setTransform(S,0,0,S,0,0);
- const py=MH;ctx.fillStyle='#120e24';ctx.fillRect(0,py,W,UI);ctx.fillStyle='#ff2ea8';ctx.fillRect(0,py,W,1);
+ const py=MH;ctx.fillStyle='#0f0f13';ctx.fillRect(0,py,W,UI);ctx.fillStyle='#44444f';ctx.fillRect(0,py,W,1);
  const bw=Math.min(130,Math.floor((W-210)/1.2));
  bar(6,py+14,bw,'POWER','#ffd84a','#b8921e',G.power,rate('P'),'P');
  bar(6,py+38,bw,'KNOWLEDGE','#4ad8ff','#1f86a8',G.know,rate('K'),'K');
@@ -207,7 +209,7 @@ function draw(){
  txt('BUILD',cx-4,cy+4,'#77778a',5,'right');
  txt('Space pause  Esc cancel  Shift+R restart',cx-4,py+UI-6,'#55556a',5,'right');
  txt('v0.3',W-3,H-3,'#8a7ab8',5,'right');
- if(!G.started){ctx.fillStyle='rgba(18,14,36,.88)';ctx.fillRect(0,0,W,H);const cy=H/2-40;
+ if(!G.started){ctx.fillStyle='rgba(11,11,14,.88)';ctx.fillRect(0,0,W,H);const cy=H/2-40;
   txt('ASCII ROGUE',W/2,cy,'#ffe01a',22,'center');txt('ASCII ROGUE',W/2-1,cy-1,'#ff2ea8',22,'center');txt('ASCII ROGUE',W/2-2,cy-2,'#ffe01a',22,'center');
   txt('Defend the Keep: survive '+CFG.win_waves+' enemy waves.',W/2,cy+22,'#2ee6ff',8,'center');
   ['W train worker   S train soldier (needs Barracks)','B Barracks   L Library (on blue deposit)   1/2/3 upgrades (cost Knowledge)','P / K move a worker to Power / Knowledge   Space pause   Esc cancel   R restart']
