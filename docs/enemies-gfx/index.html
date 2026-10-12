@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>ASCII Rogue - Enemy Options</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#0b0b0e;overflow:hidden}canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}</style>
+</head><body><canvas id="c"></canvas>
+<script>
+"use strict";
+const PW=96, W=PW*3, H=176;
+const PAL={'.':null,R:'#ff4a4a',r:'#a82424',d:'#5a1414',E:'#ffd84a',W:'#e8e0d0',B:'#8a6a3a',b:'#5a4024',K:'#0b0b0e',
+ P:'#ff7a5a',k:'#3a0d18',m:'#6a1a2a',e:'#ffb0b0'};
+const SPR={
+goblin1:["R......R","RR.rr.RR",".RRRRRB.",".RERREBB","..RrRRB.",".dddddB.","..R..R..",".RR...R."],
+goblin2:["R......R","RR.rr.RR",".RRRRR.B",".RERRERB","..RrRR.B",".ddddd.B","..R..R..","..R..RR."],
+bug1:["..r..r..","...rr...","rRRRRRRr",".RERRER.","rRRrrRRr",".RRrrRR.","rRRRRRRr","........"],
+bug2:[".r....r.","...rr...",".RRRRRR.","rRERRERr",".RRrrRR.","rRRrrRRr",".RRRRRR.","r......r"],
+wraith1:["..mmmm..",".mkkkkm.","mkRkkRkm","mkkkkkkm",".mmkkmm.","..mmmm..","...mm.m.","....m..."],
+wraith2:["..mmmm..",".mkkkkm.","mkRkkRkm","mkkkkkkm",".mmkkmm.","..mmmm..",".m.mm...","...m...."],
+goblinLair:["       W        ","      WBW       ","     BBBBB      ","   W BbBbB W    ","    BBBBBBB     ","   BBbBbBbBB    ","  WBBBBBBBBBW   ","  BBbBBKBBbBB   ","  BBBBKKKBBBB   "," WBbBBKKKBBbBW  "," BBBBKKKKKBBBB  "," BbBBKKKKKBBbB  ","WBBBBKKKKKBBBBW ","bbbbbKKKKKbbbbb ","W.W.W.....W.W.W ","                "],
+bugLair:["                ","      rrrr      ","    rrRRRRrr    ","   rRRRKRRRRr   ","  rRRRRRRRKRRr  ","  rRKRRRRRRRRr  "," rRRRRRRKRRRRRr "," rRRRRRRRRRRKRr "," rRKRRRRRRRRRRr ","rRRRRRKKRRRRRRRr","rRRRRKKKKRRRKRRr","rRRRRKKKKRRRRRRr","drrrrKKKKrrrrrrd","dddddddddddddddd","  d  d    d  d  ","                "],
+wraithLair:["     mmmmmm     ","   mmkkkkkkmm   ","  mkkkdddkkkkm  ","  mkkddRddkkkm  "," mkkdRdddRdkkm  "," mkkddddRddkkm  "," mkdRdddddddkm  "," mkddddRdddRkm  "," mkdddRddddddkm "," mkddddddRdddkm "," mkdRddddddddkm "," mkddddRdddRdkm ","mmmmmmmmmmmmmmmm","mkmmkmmmmkmmkmmm","mmmmmmmmmmmmmmmm","                "]
+};
+for(const k of ['goblinLair','bugLair','wraithLair'])SPR[k]=SPR[k].map(r=>r.replace(/ /g,'.'));
+const EXPECT={goblin1:[8,8],goblin2:[8,8],bug1:[8,8],bug2:[8,8],wraith1:[8,8],wraith2:[8,8],goblinLair:[16,16],bugLair:[16,16],wraithLair:[16,16]};
+const OPTS=[['A','Goblin Horde','goblin','goblinLair'],['B','Bug Swarm','bug','bugLair'],['C','Shadow Wraiths','wraith','wraithLair']];
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let S=1,frame=0;
+function spr(n,x,y,s){const g=SPR[n];for(let j=0;j<g.length;j++)for(let i=0;i<g[j].length;i++){const p=PAL[g[j][i]];if(p){ctx.fillStyle=p;ctx.fillRect((x+i*s)*S,(y+j*s)*S,s*S,s*S);}}}
+function txt(t,x,y,px,c){ctx.font=`bold ${Math.round(px*S)}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=c;ctx.fillText(t,x*S,y*S);}
+function draw(){
+ ctx.fillStyle='#0b0b0e';ctx.fillRect(0,0,cv.width,cv.height);
+ OPTS.forEach(([L,name,u,lair],i)=>{
+  const x0=i*PW;ctx.fillStyle='#16161b';ctx.fillRect((x0+3)*S,3*S,(PW-6)*S,(H-6)*S);
+  for(let y=6;y<H-6;y+=6)for(let x=6;x<PW-6;x+=6){ctx.fillStyle='#202027';ctx.fillRect((x0+x)*S,y*S,S,S);}
+  txt(L,x0+PW/2,17,22,'#ff4a4a');
+  const f=u+(((frame+i)%2)+1), y=bob(u);
+  spr(f,x0+PW/2-16,34+y,4);
+  [[0,0],[10,3],[20,0],[5,10],[15,11]].forEach(([dx,dy],k)=>spr(u+(((frame+k)%2)+1),x0+PW/2-14+dx,78+dy,1));
+  spr(lair,x0+PW/2-16,104,2);
+  txt(name,x0+PW/2,152,8,'#e8e8e8');
+  txt('swarm  /  cluster  /  lair',x0+PW/2,164,5,'#8a8a96');
+ });
+}
+function bob(u){return u==='wraith'?(frame%2?-1:1):0}
+function resize(){
+ const d=window.devicePixelRatio||1,vw=innerWidth*d,vh=innerHeight*d;let s=Math.min(vw/W,vh/H);S=s>=1?Math.floor(s):s;
+ cv.width=Math.round(W*S);cv.height=Math.round(H*S);cv.style.width=cv.width/d+'px';cv.style.height=cv.height/d+'px';
+ cv.style.margin=`${(innerHeight-cv.height/d)/2}px auto 0`;ctx.imageSmoothingEnabled=false;draw();
+}
+addEventListener('resize',resize);resize();setInterval(()=>{frame++;draw();},350);
+</script></body></html>
