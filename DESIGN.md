@@ -43,3 +43,31 @@
 - Playtest-driven change: Workplace supply +4 -> +6 (Human-heavy strategy went from 2/4 to 6/6 wins).
 - Hallucinator added as a pink alt-frame Chatbot (1.5x HP, speed 26); no erratic pathing yet.
 - Playtest (6 seeds each): see CHANGELOG/LOG; sensible strategies win, passive loses at wave 2, games ~12-14 min.
+
+## 2026-10-11 v1.1 tuning (CEO)
+v1.0 too easy and greedy economy won every time. Numbers changed:
+
+| knob | v1.0 | v1.1 |
+|---|---|---|
+| WAVES W1 / W2 / W3 | 6 / 8 / 8+3 | 8 / 11 / 9+4 |
+| wave_scale | 1 | 1.2 |
+| enemy_hp_growth | 0.8 | 0.6 |
+| unicorn_hp (new knob, was hard-coded) | 3 | 5 |
+| boss_hp (SAM-1) | 200 | 900 |
+| boss_dmg | 60 | 95 |
+| boss_human_dmg | 15 | 10 |
+| human_unicorn_dmg | 8 | 12 |
+| cannon_cost (Disruptor) | 100 | 90 |
+| cannon_dmg | 1 | 0.6 |
+| soldier_cost (Human) | 50 | 30 |
+| early-call bonus | unchanged | unchanged |
+
+Result over 18 seeds:
+```
+summary: economy 14/18 wins avg 13:35 winHP 64% dmg/wave 1:16 2:6 7:4 10:58
+greedyLate 0/18 wins avg 2:29 winHP 0% dmg/wave 1:96 2:4
+disruptor 11/18 wins avg 10:52 winHP 32% dmg/wave 1:10 2:23 10:48
+human 13/18 wins avg 12:50 winHP 53% dmg/wave 4:9 5:17 10:42
+passive 0/18 wins avg 2:29 winHP 0% dmg/wave 1:96 2:4
+```
+Where each strategy struggles: economy on waves 1-2 and the boss, Disruptor-only on wave 2 and on SAM-1/Unicorns, Human-heavy on the wave 4-5 swarms. Hallucinator erratic movement skipped to save time.

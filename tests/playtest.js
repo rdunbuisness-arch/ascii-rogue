@@ -14,6 +14,7 @@ function build(w,type){const G=w.__G(),{C,R}=w.__dims();if(type==='library'){con
  for(let x=7;x<C-8;x++)for(let y=1;y<R-3;y+=2)if(w.__place(type,x,y)){G.place=null;return true;}G.place=null;return false;}
 function count(G,t){return G.blds.filter(b=>b.type===t).length;}
 const STRATS={
+ greedyLate:(w,G,C)=>{if(G.wave>=1&&!G.spawnQ&&!G.enemies.length)G.lateOk=1;if(!G.lateOk){const ints=G.workers.length+G.wq.length,[u,cap]=w.__supply();if(!G.wq.length&&u<cap)w.__act('worker');if(ints>=8&&count(G,'library')<1&&G.power>=C.library_cost)build(w,'library');if(count(G,'library')&&G.workers.filter(x=>x.job==='K').length<3)w.__assign('K');return;}STRATS.economy(w,G,C);},
  passive:(w,G,C)=>{if(G.workers.length+G.wq.length<10&&!G.wq.length)w.__act('worker');},
  economy:(w,G,C)=>{const ints=G.workers.length+G.wq.length,[u,cap]=w.__supply();
   if(!G.wq.length&&u<cap&&ints<(G.t<150?12:22))w.__act('worker');
@@ -46,11 +47,11 @@ const STRATS={
 module.exports={STRATS,helpers:[cannonSpots,tryCannon,build,count]};
 function play(strat,seed){const r0=Math.random;Math.random=seedRand(seed*7919+13);const w=load(Q);w.Math.random=Math.random;w.__newGame();const G=w.__G(),C=w.__CFG;
  let t=0;while(!G.over&&G.t<1500){for(let k=0;k<5;k++)w.__step(0.1);STRATS[strat](w,G,C);}
- Math.random=r0;return{strat,seed,win:G.won,len:G.t,hp:G.keep.hp,wave:G.wave,leak:G.firstLeak||'-',half:G.halfWave||'-',kills:G.kills};}
+ Math.random=r0;return{strat,seed,win:G.won,len:G.t,hp:G.keep.hp,max:G.keep.max,dmg:G.dmgW||{},wave:G.wave,leak:G.firstLeak||'-',half:G.halfWave||'-',kills:G.kills};}
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
-if(require.main===module){const rows=[];for(const st of ['economy','disruptor','human','passive'])for(let s=1;s<=SEEDS;s++)rows.push(play(st,s));
-console.log('| strategy | seed | result | length | Market HP | waves | first leak | <50% HP |');console.log('|---|---|---|---|---|---|---|---|');
-for(const r of rows)console.log(`| ${r.strat} | ${r.seed} | ${r.win?'WIN':'loss'} | ${fmt(r.len)} | ${r.hp} | ${r.wave} | ${r.leak} | ${r.half} |`);
-const sum={};for(const r of rows){const s=sum[r.strat]=sum[r.strat]||{w:0,n:0,len:0};s.n++;s.w+=r.win;s.len+=r.len;}
-console.log('\nsummary: '+Object.entries(sum).map(([k,v])=>`${k} ${v.w}/${v.n} wins avg ${fmt(v.len/v.n)}`).join('; '));
+if(require.main===module){const rows=[];for(const st of (process.env.STRATS||'economy,greedyLate,disruptor,human,passive').split(','))for(let s=1;s<=SEEDS;s++)rows.push(play(st,s));
+if(!process.env.QUIET){console.log('| strategy | seed | result | length | Market HP | waves | first leak | damage by wave |');console.log('|---|---|---|---|---|---|---|---|');
+for(const r of rows)console.log(`| ${r.strat} | ${r.seed} | ${r.win?'WIN':'loss'} | ${fmt(r.len)} | ${r.hp} | ${r.wave} | ${r.leak} | ${Object.entries(r.dmg).map(([k,v])=>'w'+k+':'+v).join(' ')||'-'} |`);}
+const sum={};for(const r of rows){const s=sum[r.strat]=sum[r.strat]||{w:0,n:0,len:0,hp:0,dw:{}};s.n++;s.w+=r.win;s.len+=r.len;if(r.win)s.hp+=r.hp/r.max;for(const k in r.dmg)s.dw[k]=(s.dw[k]||0)+r.dmg[k]/1;}
+console.log('\nsummary: '+Object.entries(sum).map(([k,v])=>`${k} ${v.w}/${v.n} wins avg ${fmt(v.len/v.n)} winHP ${v.w?Math.round(100*v.hp/v.w):0}% dmg/wave ${Object.entries(v.dw).map(([a,b])=>a+':'+Math.round(b/v.n)).join(' ')}`).join('\n'));
 if(process.env.STRICT){const bad=['economy','disruptor','human'].filter(k=>sum[k].w<sum[k].n*0.75);if(bad.length||sum.passive.w)process.exit(1);}}

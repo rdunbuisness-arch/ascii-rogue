@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.1 - 2026-10-11 (tuning only)
+- Harder: bigger early waves, tankier Unicorns and SAM-1, weaker but cheaper Disruptors, cheaper Humans. Greedy economy no longer dominates.
+- Playtest bot: new greedy-late strategy, per-wave damage tracking.
+
+| knob | v1.0 | v1.1 |
+|---|---|---|
+| WAVES W1 / W2 / W3 | 6 / 8 / 8+3 | 8 / 11 / 9+4 |
+| wave_scale | 1 | 1.2 |
+| enemy_hp_growth | 0.8 | 0.6 |
+| unicorn_hp (new knob, was hard-coded) | 3 | 5 |
+| boss_hp (SAM-1) | 200 | 900 |
+| boss_dmg | 60 | 95 |
+| boss_human_dmg | 15 | 10 |
+| human_unicorn_dmg | 8 | 12 |
+| cannon_cost (Disruptor) | 100 | 90 |
+| cannon_dmg | 1 | 0.6 |
+| soldier_cost (Human) | 50 | 30 |
+| early-call bonus | unchanged | unchanged |
+
 ## v1.0 — demo (2026-10-11)
 - Streamed waves from a data-driven composition table (Chatbot / Scraper / Hallucinator / Unicorn), spawned over 20s.
 - Auto waves ON by default (first at 75s, then 75s stepping -2 to 58s); Send Wave calls early for +1 Compute per second skipped.

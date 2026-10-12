@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Superhumanity v1.0 demo</title>
+<html lang="en"><head><meta charset="utf-8"><title>Superhumanity v1.1 demo</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>html,body{margin:0;height:100%;background:#120a24;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:crosshair}</style>
 </head><body><canvas id="c"></canvas>
@@ -7,17 +7,17 @@
 <script>
 "use strict";
 // SUPERHUMANITY v0.4 - chiptune arcade tower defense. Knobs below; URL params override, e.g. ?wave_first=5&cannon_dmg=3
-const VERSION='v1.0';
+const VERSION='v1.1';
 const FEAT={cannons:true};
 const CFG={start_power:100,start_knowledge:0,start_workers:3,
  worker_cost:50,worker_time:6,worker_speed:48,carry:5,gather_time:1.5,node_queue:1,
  supply_base:12,supply_lib:6,supply_bar:6,
  barracks_cost:150,barracks_time:15,library_cost:75,library_time:12,
- soldier_cost:50,soldier_time:6,soldier_speed:45,human_range_mult:3.5,human_unicorn_dmg:8,tinfoil_mult:2,
+ soldier_cost:30,soldier_time:6,soldier_speed:45,human_range_mult:3.5,human_unicorn_dmg:12,tinfoil_mult:2,
  pylon_cost:15,field_cost:5,field_max:10,
- cannon_cost:100,cannon_time:8,cannon_dmg:1,cannon_range:36,cannon_rate:1.5,bounty:3,
- keep_hp:100,attack_dmg:20,enemy_speed:22,enemy_hp:4,enemy_hp_growth:0.8,
- auto_waves:1,wave_first:75,wave_interval:75,wave_interval_step:-2,wave_interval_min:58,wave_duration:20,wave_scale:1,early_bonus:1,boss_hp:200,boss_speed:9,boss_dmg:60,boss_human_dmg:15,wave_base:6,wave_growth:2,spawn_gap:0.6,win_waves:10,
+ cannon_cost:90,cannon_time:8,cannon_dmg:0.6,cannon_range:36,cannon_rate:1.5,bounty:3,
+ keep_hp:100,attack_dmg:20,enemy_speed:22,enemy_hp:4,enemy_hp_growth:0.6,
+ auto_waves:1,wave_first:75,wave_interval:75,wave_interval_step:-2,wave_interval_min:58,wave_duration:20,wave_scale:1.2,early_bonus:1,boss_hp:900,unicorn_hp:5,boss_speed:9,boss_dmg:95,boss_human_dmg:10,wave_base:6,wave_growth:2,spawn_gap:0.6,win_waves:10,
  dmg_k:30,dmg_p:50,dmg_mult:1.6,range_k:50,range_p:75,range_mult:1.35,
  walls_k:60,walls_p:75,walls_hp:50,spears_k:25,spears_p:40,
  node_dist_p:[48,100],node_dist_k:[80,170],
@@ -208,10 +208,10 @@ function moveTo(u,tx,ty,sp,dt){const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy),st=
 function assign(job){const from=G.workers.filter(w=>w.job!==job);if(!from.length)return;if(job==='K'&&!hasLib())return say('Build a '+NAMES.library+' first');
  const w=from[0];w.job=job;if(!w.carry)w.st='idle';}
 function rate(k){const t0=G.t-CFG.rate_window;let s=0;for(const e of G.income)if(e[0]>=t0&&e[1]===k)s+=e[2];return s*60/Math.min(CFG.rate_window,Math.max(G.t,1));}
-const ENEMY={grunt:{spr:'chatbot',hp:1,spd:22},fast:{spr:'scraper',hp:0.6,spd:37},erratic:{spr:'halluc',hp:1.5,spd:26},tank:{spr:'unicorn',hp:3,spd:13},boss:{spr:'sam',hp:0,spd:9,boss:1}};
+const ENEMY={grunt:{spr:'chatbot',hp:1,spd:22},fast:{spr:'scraper',hp:0.6,spd:37},erratic:{spr:'halluc',hp:1.5,spd:26},tank:{spr:'unicorn',get hp(){return CFG.unicorn_hp;},spd:13},boss:{spr:'sam',hp:0,spd:9,boss:1}};
 const espd=k=>k==='boss'?CFG.boss_speed:ENEMY[k].spd*CFG.enemy_speed/22;
 // WAVES: data-driven composition per wave (counts are multiplied by CFG.wave_scale; boss count is fixed)
-const WAVES=[{grunt:6},{grunt:8},{grunt:8,fast:3},{grunt:10,fast:4},{grunt:10,fast:5,erratic:2},{grunt:10,fast:6,erratic:3,tank:1},{grunt:12,fast:6,erratic:4,tank:2},{grunt:12,fast:8,erratic:5,tank:3},{grunt:12,fast:8,erratic:5,tank:3},{grunt:8,fast:4,erratic:3,tank:1,boss:1}];
+const WAVES=[{grunt:8},{grunt:11},{grunt:9,fast:4},{grunt:10,fast:4},{grunt:10,fast:5,erratic:2},{grunt:10,fast:6,erratic:3,tank:1},{grunt:12,fast:6,erratic:4,tank:2},{grunt:12,fast:8,erratic:5,tank:3},{grunt:12,fast:8,erratic:5,tank:3},{grunt:8,fast:4,erratic:3,tank:1,boss:1}];
 function waveComp(n){const w=WAVES[Math.min(n,WAVES.length)-1]||{},o={};for(const k in w)o[k]=k==='boss'?w[k]:Math.max(0,Math.round(w[k]*CFG.wave_scale));return o;}
 function waveList(n){const c=waveComp(n),l=[];const ks=['grunt','fast','erratic','tank'];let left=true;while(left){left=false;for(const k of ks)if(c[k]>0){l.push(k);c[k]--;left=true;}}for(let i=0;i<(c.boss||0);i++)l.push('boss');return l;}
 const waveSize=n=>waveList(n).length;
@@ -247,7 +247,7 @@ function step(dt){
  for(const e of G.enemies){
   if(e.next<0||G.g[e.next]===CORE.FIELD||G.g[e.next]===CORE.BLD){const c=cellAt(e.x,e.y);e.next=c>=0?CORE.next(G.dist,G.g,C,R,c):-1;}
   if(e.next<0){moveTo(e,G.keep.x+G.keep.pw/2,G.keep.y+G.keep.ph/2,espd(e.kind),dt);continue;}
-  const t=ctr(e.next);if(moveTo(e,t.x,t.y,espd(e.kind),dt)){if(G.g[e.next]===CORE.GOAL){e.dead=true;boom(e.x,e.y,'#ff8a2a');SFX.hit();G.shake=0.35;G.keep.flash=0.15;duck(0.5,0.4);G.keep.hp=Math.max(0,G.keep.hp-(e.kind==='boss'?CFG.boss_dmg:CFG.attack_dmg));if(!G.firstLeak)G.firstLeak=G.wave;if(!G.halfWave&&G.keep.hp<G.keep.max/2)G.halfWave=G.wave;}
+  const t=ctr(e.next);if(moveTo(e,t.x,t.y,espd(e.kind),dt)){if(G.g[e.next]===CORE.GOAL){e.dead=true;boom(e.x,e.y,'#ff8a2a');SFX.hit();G.shake=0.35;G.keep.flash=0.15;duck(0.5,0.4);G.keep.hp=Math.max(0,G.keep.hp-(e.kind==='boss'?CFG.boss_dmg:CFG.attack_dmg));if(!G.firstLeak)G.firstLeak=G.wave;G.dmgW=G.dmgW||{};G.dmgW[G.wave]=(G.dmgW[G.wave]||0)+(e.kind==='boss'?CFG.boss_dmg:CFG.attack_dmg);if(!G.halfWave&&G.keep.hp<G.keep.max/2)G.halfWave=G.wave;}
    else e.next=CORE.next(G.dist,G.g,C,R,e.next);}
   if(e.flash>0)e.flash-=dt;}
  // cannons
