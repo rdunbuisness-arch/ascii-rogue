@@ -12,6 +12,7 @@ const hit=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
   for(const r of L.hud)assert(!hit(r,L.map),`${w}x${h}: HUD '${r.what}' ${JSON.stringify(r)} overlaps map ${JSON.stringify(L.map)}`);
   assert(L.map.y>=L.TOP&&L.map.y+L.map.h<=L.H&&L.map.w<=L.W,'map inside canvas, below top strip');
   assert(L.map.h===L.R*8&&L.R>=8,'map scaled to remaining space');
+  for(const r of L.hud)assert(r.x>=0&&r.x+r.w<=L.W+0.5&&r.y+r.h<=L.H+0.5,`${w}x${h}: HUD '${r.what}' cut off`);
   const top=L.hud.find(r=>r.what==='topbar'),panel=L.hud.find(r=>r.what==='panel');
   assert(top.y+top.h<=L.map.y&&panel.y>=L.map.y+L.map.h,'strips above/below map');
   const rk=await p.evaluate(()=>{const G=__G(),{C,R}=__dims();let t=0,bt=0;for(let x=0;x<C;x++){if(G.g[x]===1)t++;if(G.g[(R-1)*C+x]===1)bt++;}return[t,bt];});rocksTop+=rk[0];rocksBot+=rk[1];

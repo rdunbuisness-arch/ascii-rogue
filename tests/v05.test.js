@@ -2,7 +2,7 @@
 const {chromium}=require('playwright'),assert=require('assert'),path=require('path');
 const URL='file://'+path.join(__dirname,'../docs/index.html');
 (async()=>{const b=await chromium.launch(process.env.CHROME?{executablePath:process.env.CHROME}:{});const p=await b.newPage({viewport:{width:1280,height:720}});
- const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.goto(URL);await p.keyboard.press('Enter');
+ const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.goto(URL+'?auto_waves=0');await p.keyboard.press('Enter');
  // 1. node queue: one Intern mines a node at a time; interns spread to the shortest wait
  const q=await p.evaluate(()=>{const G=__G();G.mineLog=[];G.power=1e4;for(let i=0;i<6;i++)G.wq.push(0.01);for(let i=0;i<1200;i++)__step(0.05);
   const by={};for(const [n,a,b] of G.mineLog)(by[n]=by[n]||[]).push([a,b]);let overlaps=0,used=0;
@@ -18,7 +18,7 @@ const URL='file://'+path.join(__dirname,'../docs/index.html');
   for(let i=0;i<200;i++)__step(0.1);out.capAfter=__supply()[1];
   for(let i=0;i<30;i++)window.dispatchEvent(new KeyboardEvent('keydown',{key:'s'}));out.afterS=__supply();return out;});
  assert.deepStrictEqual(s.start,[9,12],'3 start + 6 trained');assert.deepStrictEqual(s.queued,[12,12],'queue stops at cap');assert.deepStrictEqual(s.full,[12,12]);
- assert.strictEqual(s.capAfter,22,'12 + 6 + 4');assert.deepStrictEqual(s.afterS,[22,22],'humans also capped');
+ assert.strictEqual(s.capAfter,24,'12 + 6 + 6');assert.deepStrictEqual(s.afterS,[24,24],'humans also capped');
  // 3. Human one-shot: kills a Chatbot outright from long range, consumed; Unicorn takes heavy damage
  const h=await p.evaluate(()=>{const G=__G(),C=__CFG,out={};G.soldiers=[];G.sq=[];G.enemies=[];
   const k=G.keep,px=k.x+k.pw+20,py=k.y+4,r=C.cannon_range*C.human_range_mult;out.range=r;

@@ -27,3 +27,19 @@
 - Pathing/obstacles, or keep straight-line movement?
 
 - 2026-10-11 — Visual iteration happens via chat mockups plus a static mockup page (`docs/mockup/`); game logic waits until the look is settled.
+
+## Superhumanity direction (2026-10-11)
+- Title: **Superhumanity**. Modern humanity under attack by superintelligent AI in humanoid robots; satire of modern AI and the grab for Knowledge and Power.
+- Fast-paced, bright, chiptune arcade.
+- Gameplay: tower defense. Buy force fields that link terrain into a maze for robots to path through, and build plasma cannon towers.
+- The economy (Power and Knowledge) stays. Naming proposals in NAMES.md.
+
+## v1.0 demo decisions — 2026-10-11
+- Waves: auto timer ON by default (first 75s, interval 75s, -2/wave, min 58s), streamed over 20s; Send Wave = early call, +1 Compute per second skipped.
+- Composition table per Strategy Officer (W1 6 ... W10 8/4/3/1 + SAM-1). SAM-1: 200 HP, speed 9, 60 base damage.
+- attack_dmg 20 (newer CEO pacing call); enemy_hp 4, growth 0.8.
+- Deviation from the CONFIG patch: soldier_hp 2/3 assumed melee Luddites. Our Humans are single-use snipers, so instead
+  SAM-1 resists Humans (15 damage per shot) and Tinfoil Hats stays "Humans x2 vs Unicorns/SAM-1".
+- Playtest-driven change: Workplace supply +4 -> +6 (Human-heavy strategy went from 2/4 to 6/6 wins).
+- Hallucinator added as a pink alt-frame Chatbot (1.5x HP, speed 26); no erratic pathing yet.
+- Playtest (6 seeds each): see CHANGELOG/LOG; sensible strategies win, passive loses at wave 2, games ~12-14 min.

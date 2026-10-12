@@ -6,7 +6,7 @@ const URL='file://'+path.join(__dirname,'../docs/index.html');
  // auto_waves on: timer launches waves
  await p.goto(URL+'?auto_waves=1&wave_first=2');await p.keyboard.press('Enter');
  const auto=await p.evaluate(()=>{for(let i=0;i<30;i++)__step(0.1);return __G().wave;});assert.strictEqual(auto,1,'auto wave fired');
- await p.goto(URL+'?win_waves=2');await p.waitForTimeout(300);
+ await p.goto(URL+'?win_waves=2&auto_waves=0');await p.waitForTimeout(300);
  assert.strictEqual(await p.evaluate(()=>__G().started),false);await p.keyboard.press('Enter');
  assert.strictEqual(await p.evaluate(()=>__G().started),true);
  const r=await p.evaluate(()=>{const G=__G(),{C,R}=__dims(),CORE=__CORE;G.power=1e5;G.know=1e3;const out={};

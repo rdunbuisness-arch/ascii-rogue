@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.0 — demo (2026-10-11)
+- Streamed waves from a data-driven composition table (Chatbot / Scraper / Hallucinator / Unicorn), spawned over 20s.
+- Auto waves ON by default (first at 75s, then 75s stepping -2 to 58s); Send Wave calls early for +1 Compute per second skipped.
+- Boss SAM-1 on wave 10 (200 HP, speed 9, 60 damage to The Market, Humans only do 15 to it).
+- New Hallucinator robot (1.5x HP, speed 26, pink alt Chatbot frames).
+- Strategy Officer CONFIG patch: enemy_hp 4 (+0.8/wave), attack_dmg 20, upgrade prices; Workplace supply raised to +6 after playtests.
+- UI: progress bars + queue counts on Train Intern/Human and building tiles; bars over buildings under construction and
+  over The Market / Workplace while training; next-wave bar in the top strip with wave number and composition icons;
+  red flash + SFX for "not enough Compute" / "supply blocked".
+- Fixes: 1920x1080 shows ~2x more cells; bottom panel fits narrow screens.
+- Audio v2 (Chiptune Composer): music states build/wave/boss, ducking on base hits, new SFX hooks.
+- Tests: headless sim harness + scripted playtest bot (tests/playtest.js), full browser game test, updated audio/v05/play/layout tests.
+
 ## v0.5 — build-order tuning (2026-10-11)
 - Audio merged: GameAudio chiptune music (starts on first click/key) + SFX; M key and mute button.
 - Node queue: one Intern mines a node at a time; Interns pick the node with the shortest wait.
