@@ -71,3 +71,8 @@ human 13/18 wins avg 12:50 winHP 53% dmg/wave 4:9 5:17 10:42
 passive 0/18 wins avg 2:29 winHP 0% dmg/wave 1:96 2:4
 ```
 Where each strategy struggles: economy on waves 1-2 and the boss, Disruptor-only on wave 2 and on SAM-1/Unicorns, Human-heavy on the wave 4-5 swarms. Hallucinator erratic movement skipped to save time.
+
+## 2026-10-11 v1.2
+- Data bug: assign('K') used to refuse until a Server Farm was *finished*, and the per-tick check reset K jobs to Power. Now a K assignment is kept while any farm exists and the Intern gathers Compute until the farm is done. The node queue and shortest-wait scoring already included finished Data nodes (verified: Interns cycle go/mine/back on the K node).
+- Speed is a sim multiplier with ceil(speed) substeps per frame, so balance is unchanged. Not persisted; it starts at 1x.
+- The volume control is a 5-segment click bar to fit the minimalist panel.

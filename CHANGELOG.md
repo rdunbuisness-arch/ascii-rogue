@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2 - 2026-10-11
+- Fix: pressing K while the Server Farm was still being built did nothing, so Interns never mined Data unless you pressed K again later. Now K works as soon as a Server Farm is placed: the Intern keeps mining Compute until the farm is done, then switches to Data on its own.
+- Game speed 1x/1.5x/2x: button in the top bar, T or +/- hotkeys. The sim is sub-stepped, so balance doesn't change.
+- Volume control (5 steps) next to the mute button. Saved in localStorage 'asciirogue_volume'. Uses GameAudio.setVolume/getVolume when present, otherwise scales the built-in beeps.
+- New tests/data.test.js: browser regression for the L + click + K flow, plus speed and volume checks.
+
 ## v1.1 - 2026-10-11 (tuning only)
 - Harder: bigger early waves, tankier Unicorns and SAM-1, weaker but cheaper Disruptors, cheaper Humans. Greedy economy no longer dominates.
 - Playtest bot: new greedy-late strategy, per-wave damage tracking.
