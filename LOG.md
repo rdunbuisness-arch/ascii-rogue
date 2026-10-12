@@ -168,3 +168,14 @@ disruptor 11/18 wins avg 10:52 winHP 32% dmg/wave 1:10 2:23 10:48
 human 12/18 wins avg 12:50 winHP 53% dmg/wave 4:6 5:16 6:1 10:48
 passive 0/18 wins avg 2:29 winHP 0% dmg/wave 1:96 2:4
 ```
+
+## v1.3 (2026-10-11)
+- Agent turns: ~12 tool calls. Swept 8 knob sets with 12-18 seeds each.
+- All suites pass (path, play, layout, audio on v3, v05, data, browser-game). The play test's random field-spam step became flaky on the denser terrain, so it now falls back to short anchor pairs. Playtest with 18 seeds:
+```
+summary: economy 15/18 wins avg 13:13 winHP 64% dmg/wave 1:2 2:16 4:1 5:3 10:48
+greedyLate 0/18 wins avg 2:37 winHP 0% dmg/wave 1:17 2:83
+disruptor 12/18 wins avg 12:35 winHP 47% dmg/wave 1:1 2:24 10:48
+human 11/18 wins avg 13:44 winHP 65% dmg/wave 4:2 5:6 7:2 8:6 9:7 10:48
+passive 0/18 wins avg 2:37 winHP 0% dmg/wave 1:17 2:83
+```

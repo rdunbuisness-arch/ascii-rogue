@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3 - 2026-10-11
+- Map: subtle tiled ground texture (3 dark shades plus specks, baked once to an offscreen canvas) replaces the checkerboard.
+- Terrain: rocks now form ridges and corridors (vertical-biased random walks, some 2 wide, with turns). Density 0.07 -> 0.14. A 6-cell clear zone around The Market and a 2-cell margin around every node stay free. Map generation still retries until a path exists.
+- Retune for the longer mazes: Human cost 30 -> 25, SAM-1 damage from a Human (boss_human_dmg) 10 -> 8.5.
+- Audio: Chiptune Composer's audio.js v3 (louder, 3 loops per state, setVolume/getVolume), wired to the volume control.
+
 ## v1.2 - 2026-10-11
 - Fix: pressing K while the Server Farm was still being built did nothing, so Interns never mined Data unless you pressed K again later. Now K works as soon as a Server Farm is placed: the Intern keeps mining Compute until the farm is done, then switches to Data on its own.
 - Game speed 1x/1.5x/2x: button in the top bar, T or +/- hotkeys. The sim is sub-stepped, so balance doesn't change.

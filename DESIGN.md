@@ -76,3 +76,7 @@ Where each strategy struggles: economy on waves 1-2 and the boss, Disruptor-only
 - Data bug: assign('K') used to refuse until a Server Farm was *finished*, and the per-tick check reset K jobs to Power. Now a K assignment is kept while any farm exists and the Intern gathers Compute until the farm is done. The node queue and shortest-wait scoring already included finished Data nodes (verified: Interns cycle go/mine/back on the K node).
 - Speed is a sim multiplier with ceil(speed) substeps per frame, so balance is unchanged. Not persisted; it starts at 1x.
 - The volume control is a 5-segment click bar to fit the minimalist panel.
+
+## 2026-10-11 v1.3
+- New terrain knobs: rock_density 0.14, keep_clear 6, ridge_min/max 5/12, ridge_vert 0.65, ridge_turn 0.35, ridge_thick 0.3. Longer forced paths helped Disruptors and hurt Humans (Human-heavy fell to 4/12 wins), so Humans got cheaper (25) and slightly stronger against SAM-1 (8.5).
+- Ground texture stays dark-on-dark so rocks, fields and the path preview keep their contrast.

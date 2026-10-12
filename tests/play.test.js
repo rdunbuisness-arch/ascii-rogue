@@ -18,6 +18,7 @@ const URL='file://'+path.join(__dirname,'../docs/index.html');
   let fields=0;for(let k=0;k<400;k++){const x=8+Math.floor(Math.random()*(C-14)),y=Math.floor(Math.random()*R);__place('pylon',x,y);}
   const anchors=[];for(let i=0;i<C*R;i++)if(G.g[i]===CORE.ROCK||(G.cellB[i]&&G.cellB[i].type==='pylon'))anchors.push(i);
   for(let k=0;k<3000;k++){const a=anchors[Math.floor(Math.random()*anchors.length)],b=anchors[Math.floor(Math.random()*anchors.length)];__field(a,b);}
+  for(const a of anchors){if(G.fields.length)break;for(const d of [2,3,2*C,3*C]){const b=a+d;if(b<C*R&&anchors.includes(b)&&__field(a,b))break;}}
   out.fields=G.fields.length;out.pathOk=CORE.bfs(G.g,C,R)[G.spawn]>=0;out.pathLen=G.path.length;
   // cannons along the robot path
   G.place=null;let cannons=0;for(let k=0;k<G.path.length&&cannons<6;k+=4){const i=G.path[k];for(const j of CORE.nbrs(i,C,R)){if(G.g[j]===CORE.FREE&&__place('cannon',j%C,Math.floor(j/C))){cannons++;break;}}}

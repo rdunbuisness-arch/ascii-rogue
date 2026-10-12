@@ -1,30 +1,48 @@
 /* ASCII Rogue Inc - GameAudio v2: self-contained Web Audio synth (no files, no deps).
  * Exposed as window.GameAudio (NOT window.Audio, which stays the built-in constructor).
  * API (v1-compatible): start(), stop(), toggleMute() -> bool, isMuted(), names, sfx(name)
- * v2 adds: setState('build'|'wave'|'boss') (bar-quantized, short crossfade), getState(), duck(amount, seconds)
+ * v3 adds: setVolume(0-1) (persisted), getVolume(); 3 rotating loops per state. v2 adds: setState('build'|'wave'|'boss') (bar-quantized, short crossfade), getState(), duck(amount, seconds)
  * victory/defeat are jingles: they stop the loop; call start() again to resume music.
  */
 (function (w) {
   'use strict';
-  var KEY = 'asciirogue_muted', LOOKAHEAD = 0.12, TICK = 25, MASTER = 0.35, MUSIC = 0.5;
+  var KEY = 'asciirogue_muted', VKEY = 'asciirogue_volume', LOOKAHEAD = 0.12, TICK = 25, MASTER = 0.5, MUSIC = 1.0, vol = 0.8;
+  var vi = 0, rotLen = 16, limiter;
   var ctx = null, master, comp, music, evt, xf, duckBus, sfxBus, noiseBuf, timer = null;
   var wantPlay = false, playing = false, step = 0, bar = 0, nextT = 0, lastSfx = {}, muted = false;
   var state = 'build', pending = null, V = null, P = 1, S = null;
-  try { muted = w.localStorage.getItem(KEY) === '1'; } catch (e) {}
+  try { muted = w.localStorage.getItem(KEY) === '1'; var sv = parseFloat(w.localStorage.getItem(VKEY)); if (sv >= 0 && sv <= 1) vol = sv; } catch (e) {}
+  function mgain() { return muted ? 0 : MASTER * vol; }
   function hz(m) { return 440 * Math.pow(2, (m - 69) / 12) * P; }
   function rnd(n) { return Math.floor(Math.random() * n); }
   function chance(p) { return Math.random() < p; }
   function tri(r, maj) { return [r, r + (maj ? 4 : 3), r + 7]; }
 
   // chord roots (MIDI, around A3) per bar; m=minor M=major. A = 4 bars, B = 4 bars.
+  // Per state: 3 alternate loops (same tempo per state), rotating every 8 or 16 bars.
+  // chord roots (MIDI, around A3) per bar; m=minor M=major. A/B = 4-bar progressions.
+  // bass: off|roll|gallop|oct8 ; hat: off|8|16 ; lp = lead rhythm sets ; mel = lead chord-tone contour
+  var LP0 = [[0, 3, 6, 10], [0, 2, 4, 8, 11, 14], [0, 6, 8, 12]], LP1 = [[0, 4, 6, 7, 12], [2, 5, 8, 10, 14], [0, 3, 8, 11]], LP2 = [[0, 2, 3, 6, 8, 10, 12, 14], [0, 1, 4, 6, 9, 12], [0, 3, 6, 9, 12, 14]];
+  var M0 = [2, 1, 3, 2, 1, 0], M1 = [0, 1, 2, 3, 4, 3], M2 = [3, 2, 0, 2, 4, 1];
+  function T(o) { return o; }
   var TRACKS = {
-    build: { bpm: 138, A: ['57m', '53M', '55M', '52m'], B: ['50m', '53M', '57m', '55M'],
-      kick: [0, 4, 8, 12], snare: [4, 12], hat: 'off', bass: 'off', arpVol: 0.055, lead: 0.04, leadIn: 'B', clap: 0.18, sat: 0 },
-    wave: { bpm: 156, A: ['57m', '53M', '55M', '52m'], B: ['57m', '55M', '53M', '52M'],
-      kick: [0, 4, 8, 12], snare: [4, 12], hat: '16', bass: 'roll', arpVol: 0.07, lead: 0.07, leadIn: 'AB', clap: 0.32, sat: 1 },
-    boss: { bpm: 172, A: ['50m', '51M', '50m', '48M'], B: ['46M', '48M', '50m', '51M'],
-      kick: [0, 4, 8, 10, 12], snare: [4, 12], hat: '16', bass: 'roll', arpVol: 0.075, lead: 0.09, leadIn: 'AB', clap: 0.4, sat: 2 }
+    build: [
+      T({ bpm: 138, A: ['57m', '53M', '55M', '52m'], B: ['50m', '53M', '57m', '55M'], kick: [0, 4, 8, 12], snare: [4, 12], hat: 'off', bass: 'off', arpVol: 0.055, lead: 0.045, leadIn: 'B', clap: 0.18, sat: 0, lp: LP0, mel: M0 }),
+      T({ bpm: 138, A: ['50m', '46M', '48M', '45m'], B: ['53M', '48M', '50m', '52M'], kick: [0, 4, 8, 12, 14], snare: [4, 12], hat: '8', bass: 'gallop', arpVol: 0.05, lead: 0.05, leadIn: 'AB', clap: 0.16, sat: 0, lp: LP1, mel: M1 }),
+      T({ bpm: 138, A: ['57m', '57m', '53M', '55M'], B: ['52m', '53M', '55M', '57m'], kick: [0, 6, 8, 12], snare: [4, 12], hat: 'off', bass: 'oct8', arpVol: 0.06, lead: 0.04, leadIn: 'A', clap: 0.2, sat: 0, lp: LP0, mel: M2 })
+    ],
+    wave: [
+      T({ bpm: 156, A: ['57m', '53M', '55M', '52m'], B: ['57m', '55M', '53M', '52M'], kick: [0, 4, 8, 12], snare: [4, 12], hat: '16', bass: 'roll', arpVol: 0.07, lead: 0.07, leadIn: 'AB', clap: 0.32, sat: 1, lp: LP0, mel: M0 }),
+      T({ bpm: 156, A: ['52m', '48M', '50M', '47M'], B: ['45m', '48M', '52m', '50M'], kick: [0, 4, 8, 11, 12], snare: [4, 12], hat: '16', bass: 'gallop', arpVol: 0.065, lead: 0.075, leadIn: 'AB', clap: 0.3, sat: 1, lp: LP1, mel: M1 }),
+      T({ bpm: 156, A: ['57m', '55M', '57m', '60M'], B: ['53M', '55M', '52M', '57m'], kick: [0, 4, 8, 12], snare: [4, 10, 12], hat: '8', bass: 'oct8', arpVol: 0.07, lead: 0.07, leadIn: 'B', clap: 0.34, sat: 1, lp: LP2, mel: M2 })
+    ],
+    boss: [
+      T({ bpm: 172, A: ['50m', '51M', '50m', '48M'], B: ['46M', '48M', '50m', '51M'], kick: [0, 4, 8, 10, 12], snare: [4, 12], hat: '16', bass: 'roll', arpVol: 0.075, lead: 0.09, leadIn: 'AB', clap: 0.4, sat: 2, lp: LP0, mel: M0 }),
+      T({ bpm: 172, A: ['50m', '50m', '51M', '49M'], B: ['46M', '45M', '51M', '50m'], kick: [0, 3, 4, 8, 11, 12], snare: [4, 12], hat: '16', bass: 'gallop', arpVol: 0.07, lead: 0.09, leadIn: 'AB', clap: 0.42, sat: 2, lp: LP2, mel: M1 }),
+      T({ bpm: 172, A: ['55m', '56M', '55m', '53m'], B: ['51M', '53m', '55m', '56M'], kick: [0, 2, 4, 8, 10, 12], snare: [4, 12], hat: '16', bass: 'oct8', arpVol: 0.075, lead: 0.085, leadIn: 'AB', clap: 0.4, sat: 2, lp: LP1, mel: M2 })
+    ]
   };
+  function cur() { return TRACKS[state][vi % TRACKS[state].length]; }
   var ARPS = [[0, 1, 2, 3, 2, 1], [0, 2, 1, 3], [0, 1, 2, 1, 3, 2, 3, 1], [3, 2, 1, 0]];
 
   function init() {
@@ -32,15 +50,17 @@
     var AC = w.AudioContext || w.webkitAudioContext; if (!AC) return false;
     ctx = new AC();
     comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.15;
-    master = ctx.createGain(); master.gain.value = muted ? 0 : MASTER;
+    comp.threshold.value = -20; comp.ratio.value = 3; comp.knee.value = 12; comp.attack.value = 0.004; comp.release.value = 0.2;
+    limiter = ctx.createDynamicsCompressor();   // brickwall-ish safety limiter
+    limiter.threshold.value = -4; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.08;
+    master = ctx.createGain(); master.gain.value = mgain();
     music = ctx.createGain(); music.gain.value = MUSIC;   // music level
     evt = ctx.createGain();                                // event ducking / jingle stop
     xf = ctx.createGain();                                 // state crossfade
     duckBus = ctx.createGain();                            // sidechain from kick
-    sfxBus = S = ctx.createGain(); sfxBus.gain.value = 0.85;
+    sfxBus = S = ctx.createGain(); sfxBus.gain.value = 1.1;
     duckBus.connect(xf); xf.connect(evt); evt.connect(music); music.connect(comp);
-    sfxBus.connect(comp); comp.connect(master); master.connect(ctx.destination);
+    sfxBus.connect(comp); comp.connect(master); master.connect(limiter); limiter.connect(ctx.destination);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     return true;
@@ -86,10 +106,10 @@
   function snare(t, v) { noise(duckBus, t, 0.13, v, 'bandpass', 1900, 0.8); tone(duckBus, 'triangle', 230, t, 0.07, v * 0.8, 120); }
   function newBarVariation(trk, sec) {
     return { arp: ARPS[rnd(ARPS.length)], oct: chance(0.25) ? 12 : 0, ghost: chance(0.5), bassAlt: chance(0.35),
-      lead: trk.leadIn.indexOf(sec) >= 0 && chance(0.85), leadPat: rnd(3), kickExtra: chance(0.3) ? 14 : -1 };
+      lead: trk.leadIn.indexOf(sec) >= 0 && chance(0.85), leadPat: rnd(trk.lp.length), kickExtra: chance(0.3) ? 14 : -1 };
   }
   function scheduleStep(i, t, sd) {
-    var trk = TRACKS[state], cyc = bar % 16, sec = cyc < 8 ? 'A' : 'B', prog = trk[sec], c = prog[cyc % 4];
+    var trk = cur(), sec = bar < rotLen / 2 ? 'A' : 'B', prog = trk[sec], c = prog[bar % 4];
     var root = parseInt(c, 10), ch = tri(root, c.slice(-1) === 'M');
     var fill4 = bar % 4 === 3 && i >= 12, fill8 = bar % 8 === 7 && i >= 8;
     if (i === 0) V = newBarVariation(trk, sec);
@@ -100,6 +120,7 @@
       if (trk.kick.indexOf(i) >= 0 || i === V.kickExtra) kick(t, sd, trk.sat === 2);
       if (trk.snare.indexOf(i) >= 0) snare(t, trk.clap);
       if (trk.hat === '16') noise(duckBus, t, i % 4 === 2 ? 0.05 : 0.02, i % 4 === 2 ? 0.22 : 0.09, 'highpass', 8000);
+      else if (trk.hat === '8' && i % 2 === 0) noise(duckBus, t, i % 4 === 2 ? 0.05 : 0.02, i % 4 === 2 ? 0.2 : 0.08, 'highpass', 8000);
       else if (i % 4 === 2) noise(duckBus, t, 0.04, 0.18, 'highpass', 8000);
       else if (V.ghost && i % 2 === 1) noise(duckBus, t, 0.015, 0.05, 'highpass', 9500);
     }
@@ -107,6 +128,8 @@
     // bass
     var b = root - 24;
     if (trk.bass === 'roll') { if (i % 4 !== 0) note(duckBus, 'square', b + (i % 4 === 2 ? 12 : 0) + (V.bassAlt && i === 14 ? 7 : 0), t, sd * 0.8, 0.2); }
+    else if (trk.bass === 'gallop') { if (i % 4 !== 1) note(duckBus, 'square', b + (i % 4 === 3 ? 12 : 0) + (V.bassAlt && i >= 12 ? 5 : 0), t, sd * 0.7, 0.2); }
+    else if (trk.bass === 'oct8') { if (i % 2 === 0) note(duckBus, 'square', b + (i % 4 === 2 ? 12 : 0) + (V.bassAlt && i === 14 ? 3 : 0), t, sd * 1.2, 0.2); }
     else if (i % 4 === 2 || (V.bassAlt && i % 4 === 3)) note(duckBus, 'square', b + (i === 10 ? 12 : 0), t, sd * 1.4, 0.2);
     if (trk.sat === 2 && i % 2 === 1) note(duckBus, 'sawtooth', b, t, sd * 0.6, 0.06, 8);
     // arp
@@ -114,7 +137,7 @@
     if (!(trk.sat === 0 && sec === 'A' && i % 2 === 1)) note(duckBus, 'square', n + 12 + V.oct, t, sd * 0.7, trk.arpVol);
     // lead
     if (V.lead) {
-      var pats = [[0, 3, 6, 10], [0, 2, 4, 8, 11, 14], [0, 6, 8, 12]], ln = [ch[2], ch[1], ch[0] + 12, ch[2], ch[1], ch[0]];
+      var pats = trk.lp, tones = [ch[0], ch[1], ch[2], ch[0] + 12, ch[1] + 12], ln = trk.mel.map(function (d) { return tones[d]; });
       var k = pats[V.leadPat].indexOf(i);
       if (k >= 0) { note(duckBus, trk.sat ? 'sawtooth' : 'square', ln[(k + bar) % ln.length] + 12, t, sd * (trk.sat === 2 ? 2.2 : 1.6), trk.lead, trk.sat ? 7 : 0);
         if (trk.sat === 2) note(duckBus, 'sawtooth', ln[(k + bar) % ln.length] + 12, t, sd * 2.2, trk.lead * 0.6, -9); }
@@ -122,9 +145,10 @@
   }
   function tick() {
     while (nextT < ctx.currentTime + LOOKAHEAD) {
-      var sd = 60 / TRACKS[state].bpm / 4;
+      if (step === 0 && !pending && bar >= rotLen) rotate();
+      var sd = 60 / cur().bpm / 4;
       if (step === 0 && pending) {               // bar-quantized switch + crossfade dip
-        state = pending; pending = null; sd = 60 / TRACKS[state].bpm / 4;
+        state = pending; pending = null; vi = rnd(TRACKS[state].length); rotLen = chance(0.5) ? 8 : 16; sd = 60 / cur().bpm / 4;
         xf.gain.cancelScheduledValues(nextT); xf.gain.setValueAtTime(0.35, nextT); xf.gain.linearRampToValueAtTime(1, nextT + 0.3);
         bar = 0;
       }
@@ -133,8 +157,9 @@
       nextT += sd; step++; if (step >= 16) { step = 0; bar++; }
     }
   }
+  function rotate() { var n = TRACKS[state].length; vi = (vi + 1 + rnd(n - 1)) % n; rotLen = chance(0.5) ? 8 : 16; bar = 0; }
   function begin() {
-    playing = true; step = 0; bar = 0; nextT = ctx.currentTime + 0.06;
+    playing = true; step = 0; bar = 0; rotLen = 8; nextT = ctx.currentTime + 0.06;
     evt.gain.cancelScheduledValues(ctx.currentTime); evt.gain.setTargetAtTime(1, ctx.currentTime, 0.05);
     xf.gain.value = 1; if (timer) clearInterval(timer);
     timer = setInterval(tick, TICK); tick();
@@ -188,13 +213,20 @@
     stop: function () { wantPlay = false; halt(); },
     toggleMute: function () {
       muted = !muted; try { w.localStorage.setItem(KEY, muted ? '1' : '0'); } catch (e) {}
-      if (ctx) { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(muted ? 0 : MASTER, ctx.currentTime, 0.02); }
+      if (ctx) { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(mgain(), ctx.currentTime, 0.02); }
       return muted;
     },
     isMuted: function () { return muted; },
+    setVolume: function (v) {
+      v = Math.max(0, Math.min(1, +v)); if (isNaN(v)) return vol; vol = v;
+      try { w.localStorage.setItem(VKEY, String(vol)); } catch (e) {}
+      if (ctx) { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(mgain(), ctx.currentTime, 0.02); }
+      return vol;
+    },
+    getVolume: function () { return vol; },
     setState: function (s) {
-      if (!TRACKS[s]) return state;
-      if (!playing) { state = s; pending = null; }        // not running: takes effect on start()
+      if (!TRACKS.hasOwnProperty(s)) return state;
+      if (!playing) { if (s !== state) vi = rnd(TRACKS[s].length); state = s; pending = null; }        // not running: takes effect on start()
       else if (s !== state) pending = s; else pending = null;
       if (s === 'boss') GameAudio.sfx('boss');
       return s;
